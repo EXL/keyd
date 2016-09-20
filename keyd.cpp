@@ -68,6 +68,15 @@ public:
     }
 };
 
+class Application : public ZApplication {
+    Q_OBJECT
+    public:
+        Application(int argc, char *argv[]) : ZApplication(argc, argv) { }
+    protected slots:
+        virtual void slotShutdown() { }
+        virtual void slotQuickQuit() { }
+};
+
 class KeyD: public QObject, public QThread {
     Q_OBJECT
     QMap<int, QString> *config;
@@ -143,6 +152,7 @@ private slots:
 // Start
 int main(int argc, char *argv[]) {
     int res = 0;
+    Application *app = new Application(argc, argv);
     QString daemonDir = argv[0];
     int i = daemonDir.findRev("/");
     daemonDir.remove(i + 1, daemonDir.length() - i);
@@ -152,6 +162,8 @@ int main(int argc, char *argv[]) {
         KeyD *keyD = new KeyD(NULL);
         keyD->setConfigMap(cfgParser->getConfigMap());
         keyD->start();
+        res = app->exec();
+        keyD->wait();
     } else {
         std::cout << "FATAL: Config error! Shutdown!" << std::endl;
     }

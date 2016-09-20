@@ -1,5 +1,8 @@
 /* Written by EXL, 17-SEP-2016 */
 
+// Defines
+#define QT_THREAD_SUPPORT
+
 // MotoMAGX
 #include <ZApplication.h>
 
@@ -8,6 +11,7 @@
 #include <qdatastream.h>
 #include <qstring.h>
 #include <qmap.h>
+#include <qthread.h>
 
 // C++
 #include <iostream>
@@ -64,30 +68,55 @@ public:
     }
 };
 
-class KeyD: public ZApplication {
+class KeyD: public QObject, public QThread {
     Q_OBJECT
     QMap<int, QString> *config;
+    QCopChannel *bcChannel;
+    QCopChannel *sysChannel;
 public:
-    KeyD(int& argc, char** argv) : ZApplication(argc, argv) {
+    KeyD(QObject *parent = 0) : QObject(parent) {
         std::cout << "Initializing keyd (keyboard deamon)" << std::endl;
-        if (QCopChannel::isRegistered("/hardkey/bc")) {
+        config = NULL;
+        /*if (QCopChannel::isRegistered("/hardkey/bc")) {
             keyChannel = new QCopChannel("/hardkey/bc", this);
             connect(keyChannel,                                 // <- Throws event
                     SIGNAL(received(const QCString &, const QByteArray &)),
                     this,                                       // <- Catch event
                     SLOT(catchButton(const QCString &, const QByteArray &)));
-        }
+        }*/
     }
-    KeyD::~KeyD() { }
+    KeyD::~KeyD() {
+        std::cout << "Shutdown keyd (keyboard deamon)...";
+        delete sysChannel;
+        sysChannel = NULL;
+        delete bcChannel;
+        bcChannel = NULL;
+        std::cout << "done." << std::endl;
+    }
     void setConfigMap(QMap<int, QString> *a_config) {
         config = a_config;
     }
-private slots:
-    void catchButton(const QCString &message, const QByteArray &data) {
-        QDataStream stream(data, IO_ReadOnly);
+protected:
+    void run() {
+        std::cout << "Starting keyd (keyboard deamon)...";
+        bcChannel = new QCopChannel("/hardkey/bc", this);
+        connect(bcChannel,
+                SIGNAL(received(const QCString &,const QByteArray &)),
+                this,
+                SLOT(catchButton(const QCString &,const QByteArray &)));
 
+        sysChannel = new QCopChannel("EZX/System", this);
+        connect(sysChannel,
+                SIGNAL(received(const QCString &,const QByteArray &)),
+                this,
+                SLOT(catchButton(const QCString &,const QByteArray &)));
+        std::cout << "done." << std::endl;
+    }
+private slots:
+    void catchButton(const QCString &message,const QByteArray &data) {
         std::cout << "message: " << message << "; data: ";
 
+        QDataStream stream(data, IO_ReadOnly);
         while(!stream.atEnd()) {
             int var = 0;
             stream >> var;
@@ -109,9 +138,6 @@ private slots:
 
         } */
     }
-    void slotShutdown() { processEvents(); }
-    void slotQuickQuit() { processEvents(); }
-    void slotRaise() { processEvents(); }
 };
 
 // Start
@@ -123,9 +149,9 @@ int main(int argc, char *argv[]) {
     daemonDir += "/keyd.cfg";
     ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
     if (!cfgParser->getError()) {
-        KeyD *keyD = new KeyD(argc, argv);
+        KeyD *keyD = new KeyD(NULL);
         keyD->setConfigMap(cfgParser->getConfigMap());
-        res = keyD->exec();
+        keyD->start();
     } else {
         std::cout << "FATAL: Config error! Shutdown!" << std::endl;
     }

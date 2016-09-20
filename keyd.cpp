@@ -85,17 +85,29 @@ public:
 private slots:
     void catchButton(const QCString &message, const QByteArray &data) {
         QDataStream stream(data, IO_ReadOnly);
+
+        std::cout << "message: " << message << "; data: ";
+
+        while(!stream.atEnd()) {
+            int var = 0;
+            stream >> var;
+            std::cout << var << " ";
+        }
+
+        std::cout << std::endl;
+
+        /* QDataStream stream(data, IO_ReadOnly);
         if (message == "keyMsg(int,int)") {
             int key, type;
             stream >> key >> type;
             std::cout << "key: " << key << " type: " << type << std::endl;
-            /*
+
             QString system_call = config->value(key);
             if (system_call) {
                 system(system_call.ascii());
             }
-            */
-        }
+
+        } */
     }
     void slotShutdown() { processEvents(); }
     void slotQuickQuit() { processEvents(); }
@@ -103,14 +115,13 @@ private slots:
 };
 
 // Start
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     int res = 0;
-    QString dDir = argv[0];
-    int i = dDir.findRev("/");
-    dDir.remove(i + 1, dDir.length() - i);
-    dDir += "/keyd.cfg";
-    ShittyCfgParser *cfgParser = new ShittyCfgParser(dDir);
+    QString daemonDir = argv[0];
+    int i = daemonDir.findRev("/");
+    daemonDir.remove(i + 1, daemonDir.length() - i);
+    daemonDir += "/keyd.cfg";
+    ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
     if (!cfgParser->getError()) {
         KeyD *keyD = new KeyD(argc, argv);
         keyD->setConfigMap(cfgParser->getConfigMap());

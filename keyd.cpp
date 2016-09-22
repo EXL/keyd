@@ -1,4 +1,6 @@
-/* Written by EXL, 17-SEP-2016 */
+/* Written by EXL, 17-SEP-2016
+ * Updated: 22-SEP-2016
+ * License: Public Domain */
 
 // Defines
 #define QT_THREAD_SUPPORT
@@ -8,30 +10,40 @@
 
 // Qt
 #include <qwsevent_qws.h>
-#include <qdatastream.h>
 #include <qstring.h>
 #include <qmap.h>
 #include <qthread.h>
+
+// C/Linux
+#include <unistd.h>
+#include <linux/power_ic.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 
 // Global
 enum Errors { CONFIG_OK, CONFIG_ERROR };
 
 // Classes
 class ShittyCfgParser {
-    int error;
+    int error; bool vibro; int vibrodur;
     QString cfgData;
     QMap<int, QString> configMap;
     void parseConfigData() {
         QStringList configList = QStringList::split('\n', cfgData);
+        int count_config_lines = 0;
         for (uint i = 0; i < configList.count(); ++i) {
             QString configStr = configList[i];
-            qDebug(QString("%1\n").arg(configStr));
             if (configStr.startsWith("#")) {
                 continue;
             } else if (configStr[0].isDigit()) {
+                count_config_lines++;
                 QStringList tokenizeLine = QStringList::split(':', configStr);
                 if (tokenizeLine.count() == 2) {
-                    configMap.insert(tokenizeLine[0].toInt(), tokenizeLine[1]);
+                    if (count_config_lines == 1) { // First element for vibration
+                        vibro = tokenizeLine[0].toInt(); vibrodur = tokenizeLine[1].toInt();
+                    } else {
+                        configMap.insert(tokenizeLine[0].toInt(), tokenizeLine[1]);
+                    }
                 }
             }
         }
@@ -50,29 +62,48 @@ public:
                 cfgData = data;
                 parseConfigData();
             } else {
-                qDebug(QString("Error opening file: %1.\n").arg(fileName));
+                qDebug(QString("Error opening file: %1.").arg(fileName));
             }
         } else {
-            qDebug(QString("Error: config file: %1 doesn't exist.\n").arg(fileName));
+            qDebug(QString("Error: config file: %1 doesn't exist.").arg(fileName));
         }
         configFile.close();
     }
     ~ShittyCfgParser() { }
     int getError() const { return error; }
+    bool getVibro() const { return vibro; }
+    int getVibroDur() const { return vibrodur; }
     QMap<int, QString> *getConfigMap() const {
         return const_cast<QMap<int, QString> *>(&configMap);
+    }
+};
+
+class VibroThread: public QObject, public QThread {
+    Q_OBJECT
+    int duration; int toggle;
+public:
+    VibroThread(int vibro, int vibrodur, QObject *parent = 0) : QObject(parent) { toggle = vibro; duration = vibrodur; }
+protected:
+    void run() {
+        if (toggle == 1) {
+            int power_ic = open("/dev/" POWER_IC_DEV_NAME, O_RDWR);
+            ioctl(power_ic, POWER_IC_IOCTL_PERIPH_SET_VIBRATOR_ON, 1);
+            this->msleep(duration);
+            ioctl(power_ic, POWER_IC_IOCTL_PERIPH_SET_VIBRATOR_ON, 0);
+            close(power_ic);
+        }
     }
 };
 
 class Application : public ZApplication {
     Q_OBJECT
     QMap<int, QString> *config;
+    VibroThread *vibThread;
 public:
     Application(int argc, char *argv[]) : ZApplication(argc, argv) { }
     ~Application() { }
-    void setConfigMap(QMap<int, QString> *a_config) {
-        config = a_config;
-    }
+    void setConfigMap(QMap<int, QString> *a_config) { config = a_config; }
+    void setVibroThread(VibroThread *a_vibThread) { vibThread = a_vibThread; }
 protected:
     virtual bool qwsEventFilter(QWSEvent *event) {
         if (event->type == QWSEvent::Key) {
@@ -84,6 +115,7 @@ protected:
                    .arg(keyEvent->simpleData.modifiers)
                    .arg(keyEvent->simpleData.is_press)
                    .arg(keyEvent->simpleData.is_auto_repeat));
+            if (keyEvent->simpleData.is_press && !keyEvent->simpleData.is_auto_repeat) { vibThread->start(); }
             catchButton(keyEvent->simpleData.keycode, keyEvent->simpleData.is_press);
         }
         return ZApplication::qwsEventFilter(event);
@@ -157,10 +189,12 @@ int main(int argc, char *argv[]) {
     daemonDir += "/keyd.cfg";
     ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
     if (!cfgParser->getError()) {
+        VibroThread *vibroThread = new VibroThread(cfgParser->getVibro(), cfgParser->getVibroDur(), app);
         app->setConfigMap(cfgParser->getConfigMap());
+        app->setVibroThread(vibroThread);
         res = app->exec();
     } else {
-        qDebug("FATAL: Config error! Shutdown!\n");
+        qDebug("FATAL: Config error! Shutdown!");
     }
     return res;
 }

@@ -13,11 +13,7 @@
 #include <qmap.h>
 #include <qthread.h>
 
-// C++
-#include <iostream>
-
 // Global
-QCopChannel *keyChannel;
 enum Errors { CONFIG_OK, CONFIG_ERROR };
 
 // Classes
@@ -29,6 +25,7 @@ class ShittyCfgParser {
         QStringList configList = QStringList::split('\n', cfgData);
         for (uint i = 0; i < configList.count(); ++i) {
             QString configStr = configList[i];
+            qDebug(QString("%1\n").arg(configStr));
             if (configStr.startsWith("#")) {
                 continue;
             } else if (configStr[0].isDigit()) {
@@ -53,11 +50,10 @@ public:
                 cfgData = data;
                 parseConfigData();
             } else {
-                std::cout << "Error opening file: " << fileName.ascii() << std::endl;
+                qDebug(QString("Error opening file: %1.\n").arg(fileName));
             }
         } else {
-            std::cout << "Error: config file: " << fileName.ascii()
-                      << " doesn't exist." << std::endl;
+            qDebug(QString("Error: config file: %1 doesn't exist.\n").arg(fileName));
         }
         configFile.close();
     }
@@ -70,26 +66,45 @@ public:
 
 class Application : public ZApplication {
     Q_OBJECT
+    QMap<int, QString> *config;
 public:
-        Application(int argc, char *argv[]) : ZApplication(argc, argv) { }
+    Application(int argc, char *argv[]) : ZApplication(argc, argv) { }
+    ~Application() { }
+    void setConfigMap(QMap<int, QString> *a_config) {
+        config = a_config;
+    }
 protected:
-        virtual bool qwsEventFilter(QWSEvent *event) {
-            if (event->type == QWSEvent::Key) {
-                QWSKeyEvent *keyEvent = (QWSKeyEvent *)event;
-                fprintf(stderr, "stderr: KEY: win=%x unicode=%x keycode=%x modifier=%x press=%x\n",
-                        keyEvent->simpleData.window, keyEvent->simpleData.unicode, keyEvent->simpleData.keycode,
-                        keyEvent->simpleData.modifiers, keyEvent->simpleData.is_press);
-                std::cout << "cout: " << keyEvent->simpleData.keycode << std::endl;
-                qDebug("qDebug: " + keyEvent->simpleData.is_press);
-            }
-            return ZApplication::qwsEventFilter(event);
+    virtual bool qwsEventFilter(QWSEvent *event) {
+        if (event->type == QWSEvent::Key) {
+            QWSKeyEvent *keyEvent = static_cast<QWSKeyEvent *>(event);
+            qDebug(QString("win: %1, unicode: %2, keycode: %3, modifier: %4, press: %5, repeat: %6")
+                   .arg(keyEvent->simpleData.window)
+                   .arg(keyEvent->simpleData.unicode)
+                   .arg(keyEvent->simpleData.keycode)
+                   .arg(keyEvent->simpleData.modifiers)
+                   .arg(keyEvent->simpleData.is_press)
+                   .arg(keyEvent->simpleData.is_auto_repeat));
+            catchButton(keyEvent->simpleData.keycode, keyEvent->simpleData.is_press);
         }
+        return ZApplication::qwsEventFilter(event);
+    }
 protected slots:
-        virtual void slotShutdown() { processEvents(); }
-        virtual void slotQuickQuit() { processEvents(); }
-        virtual void slotRaise() { processEvents(); }
+    virtual void slotShutdown() { processEvents(); }
+    virtual void slotQuickQuit() { processEvents(); }
+    virtual void slotRaise() { processEvents(); }
+private:
+    void catchButton(uint keycode, uint is_press) {
+        if (!is_press) {
+            QString system_call = config->find(keycode).data();
+            if (system_call) {
+                system(system_call.ascii());
+            }
+        }
+    }
 };
 
+#if 0
+/*
 class KeyD: public QObject, public QThread {
     Q_OBJECT
     QMap<int, QString> *config;
@@ -99,13 +114,6 @@ public:
     KeyD(QObject *parent = 0) : QObject(parent) {
         std::cout << "Initializing keyd (keyboard deamon)" << std::endl;
         config = NULL;
-        /*if (QCopChannel::isRegistered("/hardkey/bc")) {
-            keyChannel = new QCopChannel("/hardkey/bc", this);
-            connect(keyChannel,                                 // <- Throws event
-                    SIGNAL(received(const QCString &, const QByteArray &)),
-                    this,                                       // <- Catch event
-                    SLOT(catchButton(const QCString &, const QByteArray &)));
-        }*/
     }
     KeyD::~KeyD() {
         std::cout << "Shutdown keyd (keyboard deamon)...";
@@ -135,32 +143,9 @@ protected:
         std::cout << "done." << std::endl;
     }
 private slots:
-    void catchButton(const QCString &message,const QByteArray &data) {
-        std::cout << "message: " << message << "; data: ";
 
-        QDataStream stream(data, IO_ReadOnly);
-        while(!stream.atEnd()) {
-            int var = 0;
-            stream >> var;
-            std::cout << var << " ";
-        }
-
-        std::cout << std::endl;
-
-        /* QDataStream stream(data, IO_ReadOnly);
-        if (message == "keyMsg(int,int)") {
-            int key, type;
-            stream >> key >> type;
-            std::cout << "key: " << key << " type: " << type << std::endl;
-
-            QString system_call = config->value(key);
-            if (system_call) {
-                system(system_call.ascii());
-            }
-
-        } */
-    }
-};
+};*/
+#endif
 
 // Start
 int main(int argc, char *argv[]) {
@@ -172,13 +157,10 @@ int main(int argc, char *argv[]) {
     daemonDir += "/keyd.cfg";
     ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
     if (!cfgParser->getError()) {
-        /*KeyD *keyD = new KeyD(NULL);
-        keyD->setConfigMap(cfgParser->getConfigMap());
-        keyD->start();*/
+        app->setConfigMap(cfgParser->getConfigMap());
         res = app->exec();
-        /*keyD->wait();*/
     } else {
-        std::cout << "FATAL: Config error! Shutdown!" << std::endl;
+        qDebug("FATAL: Config error! Shutdown!\n");
     }
     return res;
 }

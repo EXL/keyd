@@ -7,7 +7,7 @@
 #include <ZApplication.h>
 
 // Qt
-#include <qcopchannel_qws.h>
+#include <qwsevent_qws.h>
 #include <qdatastream.h>
 #include <qstring.h>
 #include <qmap.h>
@@ -70,11 +70,24 @@ public:
 
 class Application : public ZApplication {
     Q_OBJECT
-    public:
+public:
         Application(int argc, char *argv[]) : ZApplication(argc, argv) { }
-    protected slots:
-        virtual void slotShutdown() { }
-        virtual void slotQuickQuit() { }
+protected:
+        virtual bool qwsEventFilter(QWSEvent *event) {
+            if (event->type == QWSEvent::Key) {
+                QWSKeyEvent *keyEvent = (QWSKeyEvent *)event;
+                fprintf(stderr, "stderr: KEY: win=%x unicode=%x keycode=%x modifier=%x press=%x\n",
+                        keyEvent->simpleData.window, keyEvent->simpleData.unicode, keyEvent->simpleData.keycode,
+                        keyEvent->simpleData.modifiers, keyEvent->simpleData.is_press);
+                std::cout << "cout: " << keyEvent->simpleData.keycode << std::endl;
+                qDebug("qDebug: " + keyEvent->simpleData.is_press);
+            }
+            return ZApplication::qwsEventFilter(event);
+        }
+protected slots:
+        virtual void slotShutdown() { processEvents(); }
+        virtual void slotQuickQuit() { processEvents(); }
+        virtual void slotRaise() { processEvents(); }
 };
 
 class KeyD: public QObject, public QThread {
@@ -159,11 +172,11 @@ int main(int argc, char *argv[]) {
     daemonDir += "/keyd.cfg";
     ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
     if (!cfgParser->getError()) {
-        KeyD *keyD = new KeyD(NULL);
+        /*KeyD *keyD = new KeyD(NULL);
         keyD->setConfigMap(cfgParser->getConfigMap());
-        keyD->start();
+        keyD->start();*/
         res = app->exec();
-        keyD->wait();
+        /*keyD->wait();*/
     } else {
         std::cout << "FATAL: Config error! Shutdown!" << std::endl;
     }

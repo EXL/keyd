@@ -85,6 +85,7 @@ public:
     VibroThread(int vibro, int vibrodur, QObject *parent = 0) : QObject(parent) { toggle = vibro; duration = vibrodur; }
 protected:
     void run() {
+        qDebug(QString("Vibrate! %1 %2").arg(toggle).arg(duration));
         if (toggle == 1) {
             int power_ic = open("/dev/" POWER_IC_DEV_NAME, O_RDWR);
             ioctl(power_ic, POWER_IC_IOCTL_PERIPH_SET_VIBRATOR_ON, 1);
@@ -115,8 +116,10 @@ protected:
                    .arg(keyEvent->simpleData.modifiers)
                    .arg(keyEvent->simpleData.is_press)
                    .arg(keyEvent->simpleData.is_auto_repeat));
-            if (keyEvent->simpleData.is_press && !keyEvent->simpleData.is_auto_repeat) { vibThread->start(); }
-            catchButton(keyEvent->simpleData.keycode, keyEvent->simpleData.is_press);
+            if (keyEvent->simpleData.is_press == 1 && keyEvent->simpleData.is_auto_repeat == 0) {
+                vibThread->start();
+                catchButton(keyEvent->simpleData.keycode, keyEvent->simpleData.is_press);
+            }
         }
         return ZApplication::qwsEventFilter(event);
     }
@@ -126,10 +129,10 @@ protected slots:
     virtual void slotRaise() { processEvents(); }
 private:
     void catchButton(uint keycode, uint is_press) {
-        if (!is_press) {
+        if (is_press) {
             QString system_call = config->find(keycode).data();
             if (system_call) {
-                system(system_call.ascii());
+                system(QString("%1 %2").arg(system_call).arg(" &").ascii());
             }
         }
     }

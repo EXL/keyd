@@ -47,9 +47,7 @@ class ShittyCfgParser {
                 }
             }
         }
-        if (configMap.count() > 0) {
-            error = CONFIG_OK;
-        }
+        error = CONFIG_OK;
     }
 public:
     ShittyCfgParser(const QString &fileName) : error(CONFIG_ERROR) {
@@ -85,7 +83,6 @@ public:
     VibroThread(int vibro, int vibrodur, QObject *parent = 0) : QObject(parent) { toggle = vibro; duration = vibrodur; }
 protected:
     void run() {
-        qDebug(QString("Vibrate! %1 %2").arg(toggle).arg(duration));
         if (toggle == 1) {
             int power_ic = open("/dev/" POWER_IC_DEV_NAME, O_RDWR);
             ioctl(power_ic, POWER_IC_IOCTL_PERIPH_SET_VIBRATOR_ON, 1);
@@ -100,8 +97,17 @@ class Application : public ZApplication {
     Q_OBJECT
     QMap<int, QString> *config;
     VibroThread *vibThread;
+    QCopChannel *bcChannel;
 public:
-    Application(int argc, char *argv[]) : ZApplication(argc, argv) { }
+    Application(int argc, char *argv[]) : ZApplication(argc, argv) {
+        if (QCopChannel::isRegistered("/hardkey/bc")) {
+            bcChannel = new QCopChannel("/hardkey/bc", this);
+            connect(bcChannel,                                 // <- Throws event
+                    SIGNAL(received(const QCString &, const QByteArray &)),
+                    this,                                       // <- Catch event
+                    SLOT(catchCoButton(const QCString &, const QByteArray &)));
+        }
+    }
     ~Application() { }
     void setConfigMap(QMap<int, QString> *a_config) { config = a_config; }
     void setVibroThread(VibroThread *a_vibThread) { vibThread = a_vibThread; }
@@ -117,7 +123,7 @@ protected:
                    .arg(keyEvent->simpleData.is_press)
                    .arg(keyEvent->simpleData.is_auto_repeat));
             if (keyEvent->simpleData.is_press == 1 && keyEvent->simpleData.is_auto_repeat == 0) {
-                vibThread->start();
+                if (keyEvent->simpleData.keycode != 65286) { vibThread->start(); } // Drop Camera Shutter
                 catchButton(keyEvent->simpleData.keycode, keyEvent->simpleData.is_press);
             }
         }
@@ -136,51 +142,20 @@ private:
             }
         }
     }
-};
-
-#if 0
-/*
-class KeyD: public QObject, public QThread {
-    Q_OBJECT
-    QMap<int, QString> *config;
-    QCopChannel *bcChannel;
-    QCopChannel *sysChannel;
-public:
-    KeyD(QObject *parent = 0) : QObject(parent) {
-        std::cout << "Initializing keyd (keyboard deamon)" << std::endl;
-        config = NULL;
-    }
-    KeyD::~KeyD() {
-        std::cout << "Shutdown keyd (keyboard deamon)...";
-        delete sysChannel;
-        sysChannel = NULL;
-        delete bcChannel;
-        bcChannel = NULL;
-        std::cout << "done." << std::endl;
-    }
-    void setConfigMap(QMap<int, QString> *a_config) {
-        config = a_config;
-    }
-protected:
-    void run() {
-        std::cout << "Starting keyd (keyboard deamon)...";
-        bcChannel = new QCopChannel("/hardkey/bc", this);
-        connect(bcChannel,
-                SIGNAL(received(const QCString &,const QByteArray &)),
-                this,
-                SLOT(catchButton(const QCString &,const QByteArray &)));
-
-        sysChannel = new QCopChannel("EZX/System", this);
-        connect(sysChannel,
-                SIGNAL(received(const QCString &,const QByteArray &)),
-                this,
-                SLOT(catchButton(const QCString &,const QByteArray &)));
-        std::cout << "done." << std::endl;
-    }
 private slots:
-
-};*/
-#endif
+    void catchCoButton(const QCString &message, const QByteArray &data) {
+        QDataStream stream(data, IO_ReadOnly);
+        if (message == "keyMsg(int,int)") {
+            int key, type;
+            stream >> key >> type;
+            qDebug(QString("key: %1, type: %2").arg(key).arg(type));
+            if (key == 65285 || key == 4144) { // Gallery key and Hold Green Key
+                vibThread->start();
+                catchButton(key, type);
+            }
+        }
+    }
+};
 
 // Start
 int main(int argc, char *argv[]) {

@@ -1,5 +1,5 @@
 /* Written by EXL, 17-SEP-2016
- * Updated: 22-SEP-2016
+ * Updated: 25-SEP-2016
  * License: Public Domain */
 
 // Defines
@@ -10,6 +10,8 @@
 
 // Qt
 #include <qwsevent_qws.h>
+#include <qdatastream.h>
+#include <qcopchannel_qws.h>
 #include <qstring.h>
 #include <qmap.h>
 #include <qthread.h>
@@ -29,6 +31,7 @@ class ShittyCfgParser {
     QString cfgData;
     QMap<int, QString> configMap;
     void parseConfigData() {
+        configMap.clear();
         QStringList configList = QStringList::split('\n', cfgData);
         int count_config_lines = 0;
         for (uint i = 0; i < configList.count(); ++i) {
@@ -51,6 +54,16 @@ class ShittyCfgParser {
     }
 public:
     ShittyCfgParser(const QString &fileName) : error(CONFIG_ERROR) {
+        readFileData(fileName);
+    }
+    ~ShittyCfgParser() { }
+    int getError() const { return error; }
+    bool getVibro() const { return vibro; }
+    int getVibroDur() const { return vibrodur; }
+    QMap<int, QString> *getConfigMap() const {
+        return const_cast<QMap<int, QString> *>(&configMap);
+    }
+    void readFileData(const QString &fileName) {
         QFile configFile(fileName);
         if (configFile.exists()) {
             if (configFile.open(IO_ReadOnly)) {
@@ -67,20 +80,18 @@ public:
         }
         configFile.close();
     }
-    ~ShittyCfgParser() { }
-    int getError() const { return error; }
-    bool getVibro() const { return vibro; }
-    int getVibroDur() const { return vibrodur; }
-    QMap<int, QString> *getConfigMap() const {
-        return const_cast<QMap<int, QString> *>(&configMap);
-    }
 };
 
 class VibroThread: public QObject, public QThread {
     Q_OBJECT
     int duration; int toggle;
 public:
-    VibroThread(int vibro, int vibrodur, QObject *parent = 0) : QObject(parent) { toggle = vibro; duration = vibrodur; }
+    VibroThread(int vibro, int vibrodur, QObject *parent = 0) : QObject(parent) {
+        toggle = vibro;
+        duration = vibrodur;
+    }
+    void setVibro(int vibro) { toggle = vibro; }
+    void setVibroDur(int vibrodur) { duration = vibrodur; }
 protected:
     void run() {
         if (toggle == 1) {
@@ -95,11 +106,16 @@ protected:
 
 class Application : public ZApplication {
     Q_OBJECT
-    QMap<int, QString> *config;
-    VibroThread *vibThread;
-    QCopChannel *bcChannel;
+    QMap<int, QString> *config; QString cfgName;
+    VibroThread *vibThread; ShittyCfgParser *cfgParser;
+    QCopChannel *bcChannel; QCopChannel *appChannel;
 public:
     Application(int argc, char *argv[]) : ZApplication(argc, argv) {
+        appChannel = new QCopChannel("/ezx/keyd", this);
+        connect(appChannel,
+                SIGNAL(received(const QCString &, const QByteArray &)),
+                this,
+                SLOT(catchReload(const QCString &, const QByteArray &)));
         if (QCopChannel::isRegistered("/hardkey/bc")) {
             bcChannel = new QCopChannel("/hardkey/bc", this);
             connect(bcChannel,                                 // <- Throws event
@@ -108,13 +124,21 @@ public:
                     SLOT(catchCoButton(const QCString &, const QByteArray &)));
         }
     }
-    ~Application() { }
+    ~Application() {
+        delete bcChannel;
+        bcChannel = NULL;
+        delete appChannel;
+        appChannel = NULL;
+    }
     void setConfigMap(QMap<int, QString> *a_config) { config = a_config; }
     void setVibroThread(VibroThread *a_vibThread) { vibThread = a_vibThread; }
+    void setConfigParser(ShittyCfgParser *a_parser) { cfgParser = a_parser; }
+    void setConfigName(const QString &a_name) { cfgName = a_name; }
 protected:
     virtual bool qwsEventFilter(QWSEvent *event) {
         if (event->type == QWSEvent::Key) {
             QWSKeyEvent *keyEvent = static_cast<QWSKeyEvent *>(event);
+#if 0
             qDebug(QString("win: %1, unicode: %2, keycode: %3, modifier: %4, press: %5, repeat: %6")
                    .arg(keyEvent->simpleData.window)
                    .arg(keyEvent->simpleData.unicode)
@@ -122,6 +146,7 @@ protected:
                    .arg(keyEvent->simpleData.modifiers)
                    .arg(keyEvent->simpleData.is_press)
                    .arg(keyEvent->simpleData.is_auto_repeat));
+#endif
             if (keyEvent->simpleData.is_press == 1 && keyEvent->simpleData.is_auto_repeat == 0) {
                 if (keyEvent->simpleData.keycode != 65286) { vibThread->start(); } // Drop Camera Shutter
                 catchButton(keyEvent->simpleData.keycode, keyEvent->simpleData.is_press);
@@ -129,10 +154,10 @@ protected:
         }
         return ZApplication::qwsEventFilter(event);
     }
-protected slots:
+/*protected slots:
     virtual void slotShutdown() { processEvents(); }
     virtual void slotQuickQuit() { processEvents(); }
-    virtual void slotRaise() { processEvents(); }
+    virtual void slotRaise() { processEvents(); } */
 private:
     void catchButton(uint keycode, uint is_press) {
         if (is_press) {
@@ -148,11 +173,23 @@ private slots:
         if (message == "keyMsg(int,int)") {
             int key, type;
             stream >> key >> type;
+#if 0
             qDebug(QString("key: %1, type: %2").arg(key).arg(type));
-            if (key == 65285 || key == 4144) { // Gallery key and Hold Green Key
+#endif
+            if (key == 65285) { // Gallery Key
                 vibThread->start();
                 catchButton(key, type);
             }
+        }
+    }
+    void catchReload(const QCString &message, const QByteArray &data) {
+        Q_UNUSED(data);
+        if (message == "reload()") {
+            cfgParser->readFileData(cfgName);
+            setConfigMap(cfgParser->getConfigMap());
+            vibThread->setVibro(cfgParser->getVibro());
+            vibThread->setVibroDur(cfgParser->getVibroDur());
+            qDebug("Configuration Reloaded!");
         }
     }
 };
@@ -160,19 +197,33 @@ private slots:
 // Start
 int main(int argc, char *argv[]) {
     int res = 0;
-    Application *app = new Application(argc, argv);
-    QString daemonDir = argv[0];
-    int i = daemonDir.findRev("/");
-    daemonDir.remove(i + 1, daemonDir.length() - i);
-    daemonDir += "/keyd.cfg";
-    ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
-    if (!cfgParser->getError()) {
-        VibroThread *vibroThread = new VibroThread(cfgParser->getVibro(), cfgParser->getVibroDur(), app);
-        app->setConfigMap(cfgParser->getConfigMap());
-        app->setVibroThread(vibroThread);
-        res = app->exec();
+    if(QCopChannel::isRegistered("/ezx/keyd")) {
+        qDebug("WARNING: keyd already running, update configuration.");
+        QCopChannel::send("/ezx/keyd", "reload()");
     } else {
-        qDebug("FATAL: Config error! Shutdown!");
+        Application *app = new Application(argc, argv);
+        QString daemonDir = argv[0];
+        int i = daemonDir.findRev("/");
+        daemonDir.remove(i + 1, daemonDir.length() - i);
+        daemonDir += "/keyd.cfg";
+        ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
+        VibroThread *vibroThread = NULL;
+        if (!cfgParser->getError()) {
+            vibroThread = new VibroThread(cfgParser->getVibro(), cfgParser->getVibroDur(), app);
+            app->setConfigMap(cfgParser->getConfigMap());
+            app->setVibroThread(vibroThread);
+            app->setConfigParser(cfgParser);
+            app->setConfigName(daemonDir);
+            res = app->exec();
+        } else {
+            qDebug("FATAL: Config error! Shutdown!");
+        }
+        delete vibroThread;
+        vibroThread = NULL;
+        delete cfgParser;
+        cfgParser = NULL;
+        delete app;
+        app = NULL;
     }
     return res;
 }

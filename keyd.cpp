@@ -1,5 +1,5 @@
 /* Written by EXL, 17-SEP-2016
- * Updated: 25-SEP-2016
+ * Updated: 26-SEP-2016
  * License: Public Domain */
 
 // Defines
@@ -90,8 +90,6 @@ public:
         toggle = vibro;
         duration = vibrodur;
     }
-    void setVibro(int vibro) { toggle = vibro; }
-    void setVibroDur(int vibrodur) { duration = vibrodur; }
 protected:
     void run() {
         if (toggle == 1) {
@@ -110,12 +108,8 @@ class Application : public ZApplication {
     VibroThread *vibThread; ShittyCfgParser *cfgParser;
     QCopChannel *bcChannel; QCopChannel *appChannel;
 public:
-    Application(int argc, char *argv[]) : ZApplication(argc, argv) {
-        appChannel = new QCopChannel("/ezx/keyd", this);
-        connect(appChannel,
-                SIGNAL(received(const QCString &, const QByteArray &)),
-                this,
-                SLOT(catchReload(const QCString &, const QByteArray &)));
+    Application(int argc, char *argv[]) : ZApplication(argc, argv) { }
+    void registerChannels() {
         if (QCopChannel::isRegistered("/hardkey/bc")) {
             bcChannel = new QCopChannel("/hardkey/bc", this);
             connect(bcChannel,                                 // <- Throws event
@@ -127,13 +121,9 @@ public:
     ~Application() {
         delete bcChannel;
         bcChannel = NULL;
-        delete appChannel;
-        appChannel = NULL;
     }
     void setConfigMap(QMap<int, QString> *a_config) { config = a_config; }
     void setVibroThread(VibroThread *a_vibThread) { vibThread = a_vibThread; }
-    void setConfigParser(ShittyCfgParser *a_parser) { cfgParser = a_parser; }
-    void setConfigName(const QString &a_name) { cfgName = a_name; }
 protected:
     virtual bool qwsEventFilter(QWSEvent *event) {
         if (event->type == QWSEvent::Key) {
@@ -182,49 +172,33 @@ private slots:
             }
         }
     }
-    void catchReload(const QCString &message, const QByteArray &data) {
-        Q_UNUSED(data);
-        if (message == "reload()") {
-            cfgParser->readFileData(cfgName);
-            setConfigMap(cfgParser->getConfigMap());
-            vibThread->setVibro(cfgParser->getVibro());
-            vibThread->setVibroDur(cfgParser->getVibroDur());
-            qDebug("Configuration Reloaded!");
-        }
-    }
 };
 
 // Start
 int main(int argc, char *argv[]) {
     int res = 0;
-    if(QCopChannel::isRegistered("/ezx/keyd")) {
-        qDebug("WARNING: keyd already running, update configuration.");
-        QCopChannel::send("/ezx/keyd", "reload()");
+    Application *app = new Application(argc, argv);
+    app->registerChannels();
+    QString daemonDir = argv[0];
+    int i = daemonDir.findRev("/");
+    daemonDir.remove(i + 1, daemonDir.length() - i);
+    daemonDir += "/keyd.cfg";
+    ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
+    VibroThread *vibroThread = NULL;
+    if (!cfgParser->getError()) {
+        vibroThread = new VibroThread(cfgParser->getVibro(), cfgParser->getVibroDur(), app);
+        app->setConfigMap(cfgParser->getConfigMap());
+        app->setVibroThread(vibroThread);
+        res = app->exec();
     } else {
-        Application *app = new Application(argc, argv);
-        QString daemonDir = argv[0];
-        int i = daemonDir.findRev("/");
-        daemonDir.remove(i + 1, daemonDir.length() - i);
-        daemonDir += "/keyd.cfg";
-        ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
-        VibroThread *vibroThread = NULL;
-        if (!cfgParser->getError()) {
-            vibroThread = new VibroThread(cfgParser->getVibro(), cfgParser->getVibroDur(), app);
-            app->setConfigMap(cfgParser->getConfigMap());
-            app->setVibroThread(vibroThread);
-            app->setConfigParser(cfgParser);
-            app->setConfigName(daemonDir);
-            res = app->exec();
-        } else {
-            qDebug("FATAL: Config error! Shutdown!");
-        }
-        delete vibroThread;
-        vibroThread = NULL;
-        delete cfgParser;
-        cfgParser = NULL;
-        delete app;
-        app = NULL;
+        qDebug("FATAL: Config error! Shutdown!");
     }
+    delete vibroThread;
+    vibroThread = NULL;
+    delete cfgParser;
+    cfgParser = NULL;
+    delete app;
+    app = NULL;
     return res;
 }
 

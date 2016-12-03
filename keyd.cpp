@@ -179,10 +179,13 @@ int main(int argc, char *argv[]) {
     int res = 0;
     Application *app = new Application(argc, argv);
     app->registerChannels();
+#if 0
     QString daemonDir = argv[0];
     int i = daemonDir.findRev("/");
     daemonDir.remove(i + 1, daemonDir.length() - i);
     daemonDir += "/keyd.cfg";
+#endif
+	QString daemonDir = "/ezxlocal/download/appwrite/setup/keyd.cfg";
     ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
     VibroThread *vibroThread = NULL;
     if (!cfgParser->getError()) {

@@ -142,7 +142,7 @@ protected:
                 catchButton(keyEvent->simpleData.keycode, keyEvent->simpleData.is_press);
             }
         }
-        return ZApplication::qwsEventFilter(event);
+        return true;
     }
 /*protected slots:
     virtual void slotShutdown() { processEvents(); }

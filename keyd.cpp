@@ -17,6 +17,7 @@
 #include <qthread.h>
 
 // C/Linux
+#include <stdlib.h>
 #include <unistd.h>
 #include <linux/power_ic.h>
 #include <sys/ioctl.h>

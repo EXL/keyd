@@ -17,9 +17,15 @@ PACKAGE_NAME=keyd-$VERSION.tar.gz
 CURRENT_DIR="`pwd`"
 PACKAGE_DIR="$CURRENT_DIR/$PROJECT"
 
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
 func_package() {
     # Create dirs
-    echo -n "Prepare directory $PACKAGE_DIR for package app and building..."
+    echo -e "${BLUE}Prepare directory $PACKAGE_DIR for package app and building...${NC}"
     mkdir -p $PACKAGE_DIR
 
     # Build executable's
@@ -37,18 +43,18 @@ func_package() {
     cp keyd_* $PACKAGE_DIR
     cp keyd.cfg $PACKAGE_DIR
     cp README.md $PACKAGE_DIR
-    echo "done."
+    echo -e "${GREEN}Done!${NC}"
 
     # Archive files
-    echo -n "Package files to $PACKAGE_NAME..."
+    echo -e "${BLUE}Package files to $PACKAGE_NAME...${NC}"
     tar -czf $PACKAGE_NAME $PROJECT/
-    echo "done."
+    echo -e "${GREEN}Done!${NC}"
 
     # Clean
-    echo -n "Cleaning $PACKAGE_DIR and executables..."
+    echo -e "${BLUE}Cleaning $PACKAGE_DIR and executables...${NC}"
     rm -Rf $PACKAGE_DIR
     make clean
-    echo "done."
+    echo -e "${GREEN}Done!${NC}"
 }
 
 func_package ;

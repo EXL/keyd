@@ -68,7 +68,7 @@ ifeq ($(PLATFORM),EZX-U9)
 QTDIR       := $(TOOLPREFIX)/lib/qt-zn5
 EZXDIR      := $(TOOLPREFIX)/lib/ezx-u9
 EZXDIR2     := $(TOOLPREFIX)/lib/ezx-zn5
-LINKLIB     := -lm -lqte-mt -lezxappbase
+LINKLIB     := -lm -lqte-mt -lezxappbase -llighting
 DIRECTIV    := -DEZX_U9 $(APP_DEFINES)
 TARGET       = $(APPNAME)_U9
 endif

@@ -108,8 +108,9 @@ class Application : public ZApplication {
     QMap<int, QString> *config; QString cfgName;
     VibroThread *vibThread; ShittyCfgParser *cfgParser;
     QCopChannel *bcChannel; QCopChannel *appChannel;
+    bool isHold;
 public:
-    Application(int argc, char *argv[]) : ZApplication(argc, argv) { }
+    Application(int argc, char *argv[]) : ZApplication(argc, argv) { isHold = false; }
     void registerChannels() {
         if (QCopChannel::isRegistered("/hardkey/bc")) {
             bcChannel = new QCopChannel("/hardkey/bc", this);
@@ -138,9 +139,14 @@ protected:
                    .arg(keyEvent->simpleData.is_press)
                    .arg(keyEvent->simpleData.is_auto_repeat));
 #endif
-            if (keyEvent->simpleData.is_press == 1 && keyEvent->simpleData.is_auto_repeat == 0) {
+            if (keyEvent->simpleData.is_press == 1 && keyEvent->simpleData.is_auto_repeat == 1) {
                 if (keyEvent->simpleData.keycode != 65286) { vibThread->start(); } // Drop Camera Shutter
-                catchButton(keyEvent->simpleData.keycode, keyEvent->simpleData.is_press);
+                if (!isHold) {
+                    catchButton(keyEvent->simpleData.keycode, keyEvent->simpleData.is_press);
+                }
+                isHold = true;
+            } else if (keyEvent->simpleData.is_press == 0) {
+                isHold = false;
             }
         }
         return true;

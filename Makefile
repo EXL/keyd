@@ -136,6 +136,12 @@ $(TARGET): $(UICDECLS) $(OBJECTS) $(OBJMOC)
 
 moc: $(SRCMOC)
 
+rmobj:
+	-rm -f $(OBJECTS) $(OBJMOC) $(SRCMOC) $(UICIMPLS) $(UICDECLS)
+	-rm -f *~ core
+	$(RM) *.o
+	$(RM) moc_*.cpp
+
 clean:
 	-rm -f $(OBJECTS) $(OBJMOC) $(SRCMOC) $(UICIMPLS) $(UICDECLS)
 	-rm -f *~ core

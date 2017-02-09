@@ -20,7 +20,7 @@
 ####### Config
 APPNAME     := keyd
 UPLOAD_PATH := /mmc/mmca1/
-APP_DEFINES := -DDEBUG_LOG -DCONFIG_APPWRITE
+#APP_DEFINES := -DDEBUG_LOG -DCONFIG_APPWRITE
 
 ####### SDK and Toolchains
 TOOLPREFIX  := /arm-eabi

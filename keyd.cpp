@@ -128,7 +128,7 @@ protected:
     virtual bool qwsEventFilter(QWSEvent *event) {
         if (event->type == QWSEvent::Key) {
             QWSKeyEvent *keyEvent = static_cast<QWSKeyEvent *>(event);
-#if 0
+#ifdef DEBUG_LOG
             qDebug(QString("win: %1, unicode: %2, keycode: %3, modifier: %4, press: %5, repeat: %6")
                    .arg(keyEvent->simpleData.window)
                    .arg(keyEvent->simpleData.unicode)
@@ -144,10 +144,12 @@ protected:
         }
         return true;
     }
-/*protected slots:
+/*
+protected slots:
     virtual void slotShutdown() { processEvents(); }
     virtual void slotQuickQuit() { processEvents(); }
-    virtual void slotRaise() { processEvents(); } */
+    virtual void slotRaise() { processEvents(); }
+*/
 private:
     void catchButton(uint keycode, uint is_press) {
         if (is_press) {
@@ -163,7 +165,7 @@ private slots:
         if (message == "keyMsg(int,int)") {
             int key, type;
             stream >> key >> type;
-#if 0
+#ifdef DEBUG_LOG
             qDebug(QString("key: %1, type: %2").arg(key).arg(type));
 #endif
             if (key == 65285) { // Gallery Key
@@ -179,13 +181,14 @@ int main(int argc, char *argv[]) {
     int res = 0;
     Application *app = new Application(argc, argv);
     app->registerChannels();
-#if 0
+#ifndef CONFIG_APPWRITE
     QString daemonDir = argv[0];
     int i = daemonDir.findRev("/");
     daemonDir.remove(i + 1, daemonDir.length() - i);
     daemonDir += "/keyd.cfg";
+#else
+    QString daemonDir = "/ezxlocal/download/appwrite/setup/keyd.cfg";
 #endif
-	QString daemonDir = "/ezxlocal/download/appwrite/setup/keyd.cfg";
     ShittyCfgParser *cfgParser = new ShittyCfgParser(daemonDir);
     VibroThread *vibroThread = NULL;
     if (!cfgParser->getError()) {

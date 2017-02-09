@@ -1,5 +1,5 @@
 /* Written by EXL, 17-SEP-2016
- * Updated: 26-SEP-2016
+ * Version: v1.0 | 09-FEB-2017
  * License: Public Domain */
 
 // Defines

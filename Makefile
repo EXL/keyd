@@ -141,7 +141,7 @@ clean:
 	-rm -f *~ core
 	$(RM) *.o
 	$(RM) moc_*.cpp
-	$(RM) $(TARGET)
+	$(RM) $(TARGET) $(APPNAME)_*
 
 #--------- moc's -----------------------------
 moc_keyd.cpp: keyd.cpp

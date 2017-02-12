@@ -1,5 +1,5 @@
 /* Written by EXL, 17-SEP-2016
- * Version: v1.0 | 09-FEB-2017
+ * Version: v1.0 | 13-FEB-2017
  * License: Public Domain */
 
 // Defines
@@ -105,9 +105,7 @@ protected:
 
 class Application : public ZApplication {
     Q_OBJECT
-    QMap<int, QString> *config; QString cfgName;
-    VibroThread *vibThread; ShittyCfgParser *cfgParser;
-    QCopChannel *bcChannel; QCopChannel *appChannel;
+    QMap<int, QString> *config; VibroThread *vibThread; QCopChannel *bcChannel;
 public:
     Application(int argc, char *argv[]) : ZApplication(argc, argv) { }
     void registerChannels() {

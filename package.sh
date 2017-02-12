@@ -5,12 +5,12 @@
 ## others: Put this config in the same directory with the keyd executable binary or to the
 ## /ezxlocal/download/appwrite/setup/ directory
 ## license: Public Domain
-## version: v1.0 | 09-FEB-2017
+## version: v1.0 | 13-FEB-2017
 ##########################################################################################
 
 # Name
 PROJECT="keyd"
-VERSION="v1.0_09-FEB-2017"
+VERSION="v1.0_13-FEB-2017"
 PACKAGE_NAME=keyd-$VERSION.tar.gz
 
 # Dirs

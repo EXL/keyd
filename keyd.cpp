@@ -111,7 +111,7 @@ public:
     void registerChannels() {
         if (QCopChannel::isRegistered("/hardkey/bc")) {
             bcChannel = new QCopChannel("/hardkey/bc", this);
-            connect(bcChannel,                                 // <- Throws event
+            connect(bcChannel,                                  // <- Throws event
                     SIGNAL(received(const QCString &, const QByteArray &)),
                     this,                                       // <- Catch event
                     SLOT(catchCoButton(const QCString &, const QByteArray &)));

@@ -3,7 +3,7 @@ keyd
 
 Simple daemon skeleton for monitoring buttons on MotoMAGX phones with vibration haptics functionality and config reading.
 
-![zBookmark screenshot](https://raw.github.com/EXL/keyd/master/images/MotorolaZN5_zBookmark.png)
+![zBookmark screenshot](images/MotorolaZN5_zBookmark.png)
 
 For example, [zBookmark](http://forum.motofan.ru/index.php?s=&showtopic=165931&view=findpost&p=1783994) application by VINRARUS for Motorola ZN5 based on keyd.
 

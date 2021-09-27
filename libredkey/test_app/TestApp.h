@@ -7,7 +7,8 @@ class MainWidget : public QWidget {
 	Q_OBJECT
 
 protected:
-	void keyPressEvent(QKeyEvent *aEvent);
+	void keyPressEvent(QKeyEvent *aKeyEvent);
+	void mouseMoveEvent(QMouseEvent *aMouseEvent);
 
 signals:
 	void askToIdle(int aReason);

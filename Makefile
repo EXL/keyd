@@ -107,7 +107,7 @@ endif
 CC           = $(TOOLPREFIX)/bin/arm-linux-gnueabi-gcc
 CXX          = $(TOOLPREFIX)/bin/arm-linux-gnueabi-g++
 LD           = $(TOOLPREFIX)/bin/arm-linux-gnueabi-g++
-STRIP        = $(TOOLPREFIX)/bin/arm-linux-strip
+STRIP        = $(TOOLPREFIX)/bin/arm-linux-gnueabi-strip
 CFLAGS       = -pipe -Wall -W -O2 -DNO_DEBUG $(INCPATH)
 CXXFLAGS     = -pipe -DQWS -fno-exceptions -fno-rtti -Wall -W -O2 -DNO_DEBUG $(DIRECTIV) $(INCPATH)
 INCPATH      = -I$(QTDIR)/include -I$(EZXDIR)/include -I $(TOOLPREFIX)/arm-linux-gnueabi/include

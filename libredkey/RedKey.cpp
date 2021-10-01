@@ -53,6 +53,7 @@ typedef void (ZApplication::*qt_slot_method_t)(int aReason);
 // Global variables
 static bool G_CONFIG_PARSED = false;
 static bool G_DEBUG_OUTPUT = true;
+static QString G_GLOBAL_COMMAND = "ignore";
 static QMap<QString, QString> G_APP_MAP;
 
 static qt_slot_method_t GetOriginalSlotReturnToIdleDlSym(void) {
@@ -80,8 +81,10 @@ static void ParseConfigLine(const QString &aLine) {
 	QString lLine = aLine.stripWhiteSpace();
 	if (!lLine.startsWith("#") && !lLine.isEmpty()) { // Just drop comments and empty strings from config.
 		if (lLine.startsWith("Debug=")) {
-			if (!lLine.remove(0, 6).stripWhiteSpace().compare("Off"))
+			if (!lLine.remove(0, 6).stripWhiteSpace().compare("off"))
 				G_DEBUG_OUTPUT = false;
+		} else if (lLine.startsWith("Global=")) {
+			G_GLOBAL_COMMAND = lLine.remove(0, 7).stripWhiteSpace();
 		} else if (lLine.startsWith("App=")) {
 			const QStringList lTokenizedLine = QStringList::split('|', lLine.remove(0, 4));
 			if (lTokenizedLine.count() == 2)
@@ -105,10 +108,10 @@ static bool ReadConfigurationFile(void) {
 			G_CONFIG_PARSED = true;
 			lConfigFile.close();
 		}
-		TO_DBG("libredkey.so: Debug: Output of parsed configuration file.\n");
-		QMap<QString, QString>::Iterator lIt;
-		for (lIt = G_APP_MAP.begin(); lIt != G_APP_MAP.end(); ++lIt)
-			TO_DBG("libredkey.so: Debug: => key: '%s', value: '%s'\n", lIt.key().data(), lIt.data().data());
+//		TO_DBG("libredkey.so: Debug: Output of parsed configuration file.\n");
+//		QMap<QString, QString>::Iterator lIt;
+//		for (lIt = G_APP_MAP.begin(); lIt != G_APP_MAP.end(); ++lIt)
+//			TO_DBG("libredkey.so: Debug: => key: '%s', value: '%s'\n", lIt.key().data(), lIt.data().data());
 	}
 	return true;
 }
@@ -119,37 +122,40 @@ static void CallOriginalSlotReturnToIdle(ZApplication *aZApp, int aReason) {
 		(aZApp->*lMethod)(aReason);
 }
 
+static void ExecCommand(ZApplication *aZApp, int aReason, const QString &aCommand, const QString &aWidgetName) {
+	const QString lWidgetName = (!aCommand) ? aWidgetName + " [global]" : aWidgetName;
+	const QString lCommand = (!aCommand) ? G_GLOBAL_COMMAND : aCommand;
+	if (!lCommand.compare("hide"))
+		TO_DBG("libredkey.so: Debug: Hide command not yet implemented on '%s' app.\n", lWidgetName.data());
+	else if (!lCommand.compare("original")) {
+		TO_DBG("libredkey.so: Debug: Original command on '%s' app.\n", lWidgetName.data());
+		CallOriginalSlotReturnToIdle(aZApp, aReason);
+	} else if (lCommand.startsWith("/")) {
+		TO_DBG("libredkey.so: Debug: Run command '%s' in '%s' application.\n",
+			lCommand.data(), lWidgetName.data());
+		system(lCommand.data());
+	} else
+		TO_DBG("libredkey.so: Debug: Ignore command in '%s' application.\n", lWidgetName.data());
+}
+
 static void ProcessCustomRedKeyCommand(ZApplication *aZApp, QApplication *aQApp, int aReason) {
 	if (aReason == IDLE_REASON_RED_KEY) { // Only for Red Key reason now.
 		const QWidget *lActiveWidget = aQApp->activeWindow();
 		if (lActiveWidget) {
 			const QString lWidgetFootPrint = QFileInfo(qApp->argv()[0]).fileName() + ":" + lActiveWidget->className();
 			TO_DBG("libredkey.so: Debug: Widget footprint is: '%s'\n", lWidgetFootPrint.data());
-			const QString lCommand = G_APP_MAP[lWidgetFootPrint];
-			if (lCommand) {
-				if (!lCommand.compare("hide"))
-					TO_DBG("libredkey.so: Debug: Hide command not yet implemented.\n");
-				else if (!lCommand.compare("original")) {
-					TO_DBG("libredkey.so: Debug: Original command on '%s' app.\n", lWidgetFootPrint.data());
-					CallOriginalSlotReturnToIdle(aZApp, aReason);
-				} else if (lCommand.startsWith("/")) {
-					TO_DBG("libredkey.so: Debug: Run command '%s' in '%s' application.\n",
-						lCommand.data(), lWidgetFootPrint.data());
-					system(lCommand.data());
-				} else
-					TO_DBG("libredkey.so: Debug: Ignore command in '%s' application.\n", lWidgetFootPrint.data());
-			}
+			ExecCommand(aZApp, aReason, G_APP_MAP[lWidgetFootPrint], lWidgetFootPrint);
 		}
 	} else
 		TO_DBG("libredkey.so: Debug: Reason '%d' is not implemented now.\n", aReason);
 }
 
 void ZApplication::slotReturnToIdle(int aReason) {
-	if (ReadConfigurationFile() && !G_APP_MAP.isEmpty()) {
+	if (ReadConfigurationFile()) {
 		TO_DBG("libredkey.so: Debug: Calling slotReturnToIdleFrom() method, parameter '%d'.\n", aReason);
 		ProcessCustomRedKeyCommand(this, qApp, aReason);
 	} else {
-		TO_ERR("libredkey.so: Error: Config '%s' not exist or wrong, will call original slot method.\n", CONFIG_PATH);
+		TO_ERR("libredkey.so: Error: Cannot read '%s' config file, will call original slot method.\n", CONFIG_PATH);
 		CallOriginalSlotReturnToIdle(this, aReason);
 	}
 }

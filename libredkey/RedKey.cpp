@@ -17,10 +17,10 @@
 
 // C
 #include <dlfcn.h>
+#include <stdio.h>
 
 // Qt
 #include <qfileinfo.h>
-#include <qglobal.h>
 
 // EZX & MotoMAGX
 #include <ZApplication.h>
@@ -36,16 +36,16 @@ static qt_slot_method_t GetOriginalSlotReturnToIdleDlSym() {
 	if (!lOriginalSlot) {
 		void *lHandleLibrary = dlopen(HACK_LIBRARY, RTLD_LAZY);
 		if (!lHandleLibrary) {
-			qDebug("libredkey.so: Error: Cannot dlopen '%s' library!", HACK_LIBRARY);
+			fprintf(stderr, "libredkey.so: Error: Cannot dlopen '%s' library!\n", HACK_LIBRARY);
 			return NULL;
 		}
 		void *lHandleMethod = dlsym(lHandleLibrary, HACK_METHOD);
 		if (!lHandleMethod) {
-			qDebug("libredkey.so: Error: Cannot find '%s' method!", HACK_METHOD);
+			fprintf(stderr, "libredkey.so: Error: Cannot find '%s' method!\n", HACK_METHOD);
 			dlclose(lHandleLibrary);
 			return NULL;
 		}
-		qDebug("libredkey.so: Info: Copying address of method '%s': '%p'.", HACK_METHOD, lHandleMethod);
+		fprintf(stderr, "libredkey.so: Info: Copying address of method '%s': '%p'.\n", HACK_METHOD, lHandleMethod);
 		memcpy(&lOriginalSlot, &lHandleMethod, sizeof(void *));
 		dlclose(lHandleLibrary);
 	}
@@ -53,13 +53,13 @@ static qt_slot_method_t GetOriginalSlotReturnToIdleDlSym() {
 }
 
 void ZApplication::slotReturnToIdle(int aReason) {
-	qDebug("libredkey.so: Info: Calling slotReturnToIdleFrom() method, parameter '%d'.", aReason);
+	fprintf(stderr, "libredkey.so: Info: Calling slotReturnToIdleFrom() method, parameter '%d'.\n", aReason);
 
 	QWidget *lActiveWidget = qApp->activeWindow();
-	qDebug("libredkey.so: Info: Footprint is '%s:%s:%s'",
+	fprintf(stderr, "libredkey.so: Info: Footprint is '%s:%s:%s'\n",
 		QFileInfo(qApp->argv()[0]).fileName().data(), lActiveWidget->className(), lActiveWidget->name());
 
-	qDebug("libredkey.so: Info: Trying to hide active widget instead of closing.");
+	fprintf(stderr, "libredkey.so: Info: Trying to hide active widget instead of closing.\n");
 	lActiveWidget->hide();
 
 	const qt_slot_method_t lMethod = GetOriginalSlotReturnToIdleDlSym();

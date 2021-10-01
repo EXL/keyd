@@ -6,7 +6,7 @@
  *   EXL
  *
  * License:
- *   MIT
+ *   Public Domain
  *
  * History:
  *   02-Oct-2021: Added reading configuration file.
@@ -39,8 +39,7 @@
 #define IDLE_REASON_SLIDER  -5003
 #define HACK_LIBRARY        "libezxappbase.so.1"
 #define HACK_METHOD         "_ZN12ZApplication16slotReturnToIdleEi"
-// #define CONFIG_PATH         "/mmc/mmca1/libredkey.cfg" // TODO
-#define CONFIG_PATH         "/home/exl/Projects/keyd/libredkey/libredkey.cfg"
+#define CONFIG_PATH         "/mmc/mmca1/libredkey.cfg"
 #define TO_ERR(...)         fprintf(stderr, __VA_ARGS__)
 #define TO_DBG(...)         \
 	do { \

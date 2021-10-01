@@ -2,7 +2,8 @@
 # Default MotoMAGX platform is Motorola ZINE ZN5
 
 ####### Config
-LIBNAME     := libredkey.so
+NAME        := libredkey
+LIBNAME     := $(NAME).so
 
 ####### SDK and Toolchains
 TOOLPREFIX  := /arm-eabi
@@ -34,7 +35,7 @@ $(TARGET): $(OBJECTS)
 	$(STRIP) -s $(TARGET)
 
 tar: $(TARGET)
-	-tar -cvf $(TARGET).tar $(TARGET)
+	-tar -cvf $(NAME).tar $(TARGET) libredkey.cfg
 
 rmobj:
 	-rm -f $(OBJECTS)

@@ -56,12 +56,13 @@ void ZApplication::slotReturnToIdle(int aReason) {
 	fprintf(stderr, "libredkey.so: Info: Calling slotReturnToIdleFrom() method, parameter '%d'.\n", aReason);
 
 	QWidget *lActiveWidget = qApp->activeWindow();
-	fprintf(stderr, "libredkey.so: Info: Footprint is '%s:%s:%s'\n",
-		QFileInfo(qApp->argv()[0]).fileName().data(), lActiveWidget->className(), lActiveWidget->name());
+	if (lActiveWidget) {
+		fprintf(stderr, "libredkey.so: Info: Footprint is '%s:%s:%s'\n",
+			QFileInfo(qApp->argv()[0]).fileName().data(), lActiveWidget->className(), lActiveWidget->name());
 
-	fprintf(stderr, "libredkey.so: Info: Trying to hide active widget instead of closing.\n");
-	lActiveWidget->hide();
-
+		fprintf(stderr, "libredkey.so: Info: Trying to hide active widget instead of closing.\n");
+		lActiveWidget->hide();
+	}
 	const qt_slot_method_t lMethod = GetOriginalSlotReturnToIdleDlSym();
 	if (lMethod)
 		(this->*lMethod)(aReason);

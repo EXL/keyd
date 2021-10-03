@@ -4,6 +4,7 @@
 ####### Config
 NAME        := libredkey
 LIBNAME     := $(NAME).so
+CONFIG      := $(NAME).cfg
 
 ####### SDK and Toolchains
 TOOLPREFIX  := /arm-eabi
@@ -35,7 +36,10 @@ $(TARGET): $(OBJECTS)
 	$(STRIP) -s $(TARGET)
 
 tar: $(TARGET)
-	-tar -cvf $(NAME).tar $(TARGET) libredkey.cfg
+	-tar -cvf $(NAME).tar $(TARGET) $(CONFIG)
+
+zip: $(TARGET)
+	-zip -r -9 $(NAME).zip $(TARGET) $(CONFIG)
 
 rmobj:
 	-rm -f $(OBJECTS)
@@ -43,4 +47,4 @@ rmobj:
 	$(RM) *.o
 
 clean: rmobj
-	$(RM) $(TARGET) *.tar
+	$(RM) $(TARGET) *.tar *.zip

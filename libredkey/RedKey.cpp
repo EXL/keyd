@@ -23,6 +23,8 @@
 #include <stdlib.h>
 
 // Qt
+#include <qarray.h>
+#include <qcopchannel_qws.h>
 #include <qfile.h>
 #include <qfileinfo.h>
 #include <qmap.h>
@@ -34,6 +36,10 @@
 
 // EZX & MotoMAGX
 #include <ZApplication.h>
+#ifdef USE_ES_API
+#include <ESCopChannel.h>
+#include <ES_SubscriberAPI.h>
+#endif
 
 // Defines
 #define IDLE_REASON_RED_KEY -5000
@@ -43,6 +49,8 @@
 #define HACK_LIBRARY        "libezxappbase.so.1"
 #define HACK_METHOD         "_ZN12ZApplication16slotReturnToIdleEi"
 #define CONFIG_PATH         "/mmc/mmca1/libredkey.cfg"
+#define PHONE_PIDOF_COMMAND "busybox pidof -s /usr/SYSqtapp/phone/phone"
+#define LENGTH_PID_BUFFER   16
 #define TO_ERR(...)         fprintf(stderr, __VA_ARGS__)
 #define TO_DBG(...)         \
 	do { \
@@ -110,10 +118,12 @@ static bool ReadConfigurationFile(void) {
 			G_CONFIG_PARSED = true;
 			lConfigFile.close();
 		}
-//		TO_DBG("libredkey.so: Debug: Output of parsed configuration file.\n");
-//		QMap<QString, QString>::Iterator lIt;
-//		for (lIt = G_APP_MAP.begin(); lIt != G_APP_MAP.end(); ++lIt)
-//			TO_DBG("libredkey.so: Debug: => key: '%s', value: '%s'\n", lIt.key().data(), lIt.data().data());
+#ifndef NO_DEBUG
+		TO_DBG("libredkey.so: Debug: Output of parsed configuration file.\n");
+		QMap<QString, QString>::Iterator lIt;
+		for (lIt = G_APP_MAP.begin(); lIt != G_APP_MAP.end(); ++lIt)
+			TO_DBG("libredkey.so: Debug: => key: '%s', value: '%s'\n", lIt.key().data(), lIt.data().data());
+#endif
 	}
 	return true;
 }
@@ -136,6 +146,39 @@ static void HideAllApplicationWidgets(void) {
 	delete lWidgetList;
 }
 
+static unsigned long GetPhoneProcessPid(void) {
+	unsigned long lResult = 0;
+	char lPidBuffer[LENGTH_PID_BUFFER] = { '\0' };
+	FILE *lCmdPipe = popen(PHONE_PIDOF_COMMAND, "r");
+	if (lCmdPipe) {
+		fgets(lPidBuffer, LENGTH_PID_BUFFER, lCmdPipe);
+		if (lPidBuffer[0] == '\0')
+			TO_ERR("libredkey.so: Error: PID of '%s' pipe command is wrong.\n", PHONE_PIDOF_COMMAND);
+		else
+			lResult = strtoul(lPidBuffer, NULL, 10);
+		pclose(lCmdPipe);
+	} else
+		TO_ERR("libredkey.so: Error: Cannot execute '%s' pipe command.\n", PHONE_PIDOF_COMMAND);
+	TO_DBG("libredkey.so: Debug: PID of 'phone' process is '%ul'.\n", lResult);
+	return lResult;
+}
+
+static void ShowDesktopMainScreen(ZApplication *aZApp) {
+	unsigned long lPidPhone = GetPhoneProcessPid();
+	if (lPidPhone) {
+		QCString lBroadCastChannel = QCString("EZX/Application/" + QString::number(lPidPhone));
+		QCString lBroadCastMessage = QCString("raise()");
+		TO_DBG("libredkey.so: Debug: Will send message '%s' to the '%s' channel.\n",
+			lBroadCastMessage.data(), lBroadCastChannel.data());
+#ifdef USE_ES_API
+		ESCopChannel::send(lBroadCastChannel, lBroadCastMessage, QByteArray(), false);
+#else
+		QCopChannel::send(lBroadCastChannel, lBroadCastMessage, QByteArray());
+#endif
+		aZApp->processEvents();
+	}
+}
+
 static void ExecCommand(ZApplication *aZApp, int aReason, const QString &aCommand, const QString &aWidgetName) {
 	const QString lWidgetName = (!aCommand) ? aWidgetName + " [global]" : aWidgetName;
 	const QString lCommand = (!aCommand) ? G_GLOBAL_COMMAND : aCommand;
@@ -144,7 +187,7 @@ static void ExecCommand(ZApplication *aZApp, int aReason, const QString &aComman
 		HideAllApplicationWidgets();
 	} else if (!lCommand.compare("desktop")) {
 		TO_DBG("libredkey.so: Debug: Desktop command on '%s' app.\n", lWidgetName.data());
-
+		ShowDesktopMainScreen(aZApp);
 	} else if (!lCommand.compare("original")) {
 		TO_DBG("libredkey.so: Debug: Original command on '%s' app.\n", lWidgetName.data());
 		CallOriginalSlotReturnToIdle(aZApp, aReason);

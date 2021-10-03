@@ -28,6 +28,8 @@
 #include <qstring.h>
 #include <qstringlist.h>
 #include <qtextstream.h>
+#include <qwidget.h>
+#include <qwidgetlist.h>
 
 // EZX & MotoMAGX
 #include <ZApplication.h>
@@ -121,12 +123,25 @@ static void CallOriginalSlotReturnToIdle(ZApplication *aZApp, int aReason) {
 		(aZApp->*lMethod)(aReason);
 }
 
+static void HideAllApplicationWidgets(void) {
+	QWidgetList *lWidgetList = ZApplication::allWidgets();
+	QWidgetListIt lWidgetListItterator(*lWidgetList);
+	QWidget *lWidget = NULL;
+	while ((lWidget = lWidgetListItterator.current()) != NULL) {
+		++lWidgetListItterator;
+		TO_DBG("libredkey.so: Debug: Hide '%s' widget.\n", lWidget->className());
+		lWidget->hide();
+	}
+	delete lWidgetList;
+}
+
 static void ExecCommand(ZApplication *aZApp, int aReason, const QString &aCommand, const QString &aWidgetName) {
 	const QString lWidgetName = (!aCommand) ? aWidgetName + " [global]" : aWidgetName;
 	const QString lCommand = (!aCommand) ? G_GLOBAL_COMMAND : aCommand;
-	if (!lCommand.compare("hide"))
-		TO_DBG("libredkey.so: Debug: Hide command not yet implemented on '%s' app.\n", lWidgetName.data());
-	else if (!lCommand.compare("original")) {
+	if (!lCommand.compare("hide")) {
+		TO_DBG("libredkey.so: Debug: Hide command on '%s' app.\n", lWidgetName.data());
+		HideAllApplicationWidgets();
+	} else if (!lCommand.compare("original")) {
 		TO_DBG("libredkey.so: Debug: Original command on '%s' app.\n", lWidgetName.data());
 		CallOriginalSlotReturnToIdle(aZApp, aReason);
 	} else if (lCommand.startsWith("/")) {

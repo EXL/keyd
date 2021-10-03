@@ -63,7 +63,7 @@ typedef void (ZApplication::*qt_slot_method_t)(int aReason);
 // Global variables
 static bool G_CONFIG_PARSED = false;
 static bool G_DEBUG_OUTPUT = true;
-static QString G_GLOBAL_COMMAND = "ignore";
+static QString G_GLOBAL_COMMAND = "original";
 static QMap<QString, QString> G_APP_MAP;
 
 static qt_slot_method_t GetOriginalSlotReturnToIdleDlSym(void) {

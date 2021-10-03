@@ -9,6 +9,7 @@
  *   Public Domain
  *
  * History:
+ *   04-Oct-2021: Implemented "hide" and "desktop" commands.
  *   02-Oct-2021: Added reading configuration file.
  *   27-Sep-2021: Added first testing prototype.
  *
@@ -141,6 +142,9 @@ static void ExecCommand(ZApplication *aZApp, int aReason, const QString &aComman
 	if (!lCommand.compare("hide")) {
 		TO_DBG("libredkey.so: Debug: Hide command on '%s' app.\n", lWidgetName.data());
 		HideAllApplicationWidgets();
+	} else if (!lCommand.compare("desktop")) {
+		TO_DBG("libredkey.so: Debug: Desktop command on '%s' app.\n", lWidgetName.data());
+
 	} else if (!lCommand.compare("original")) {
 		TO_DBG("libredkey.so: Debug: Original command on '%s' app.\n", lWidgetName.data());
 		CallOriginalSlotReturnToIdle(aZApp, aReason);
@@ -152,11 +156,11 @@ static void ExecCommand(ZApplication *aZApp, int aReason, const QString &aComman
 		TO_DBG("libredkey.so: Debug: Ignore command in '%s' application.\n", lWidgetName.data());
 }
 
-static void ProcessCustomRedKeyCommand(ZApplication *aZApp, QApplication *aQApp, int aReason) {
+static void ProcessCustomRedKeyCommand(ZApplication *aZApp, int aReason) {
 	if (aReason == IDLE_REASON_RED_KEY) { // Only for Red Key reason now.
-		const QWidget *lActiveWidget = aQApp->activeWindow();
+		const QWidget *lActiveWidget = aZApp->activeWindow();
 		if (lActiveWidget) {
-			const QString lWidgetFootPrint = QFileInfo(qApp->argv()[0]).fileName() + ":" + lActiveWidget->className();
+			const QString lWidgetFootPrint = QFileInfo(aZApp->argv()[0]).fileName() + ":" + lActiveWidget->className();
 			TO_DBG("libredkey.so: Debug: Widget footprint is: '%s'\n", lWidgetFootPrint.data());
 			ExecCommand(aZApp, aReason, G_APP_MAP[lWidgetFootPrint], lWidgetFootPrint);
 		}
@@ -167,7 +171,7 @@ static void ProcessCustomRedKeyCommand(ZApplication *aZApp, QApplication *aQApp,
 void ZApplication::slotReturnToIdle(int aReason) {
 	if (ReadConfigurationFile()) {
 		TO_DBG("libredkey.so: Debug: Calling slotReturnToIdleFrom() method, parameter '%d'.\n", aReason);
-		ProcessCustomRedKeyCommand(this, qApp, aReason);
+		ProcessCustomRedKeyCommand(this, aReason);
 	} else {
 		TO_ERR("libredkey.so: Error: Cannot read '%s' config file, will call original slot method.\n", CONFIG_PATH);
 		CallOriginalSlotReturnToIdle(this, aReason);

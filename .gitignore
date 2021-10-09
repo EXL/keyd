@@ -25,7 +25,6 @@ ui_*.h
 *build-*
 
 # QtCreator
-
 *.autosave
 
 # QtCtreator Qml
@@ -34,3 +33,8 @@ ui_*.h
 
 # QtCtreator CMake
 CMakeLists.txt.user*
+
+# Archives and Binaries
+*.tar
+*.zip
+keyd

@@ -9,6 +9,7 @@
  *   Public Domain
  *
  * History:
+ *   09-Oct-2021: Fixed wrong determinig of "phone" process PID.
  *   04-Oct-2021: Implemented "hide" and "desktop" commands.
  *   02-Oct-2021: Added reading configuration file.
  *   27-Sep-2021: Added first testing prototype.
@@ -49,7 +50,7 @@
 #define HACK_LIBRARY        "libezxappbase.so.1"
 #define HACK_METHOD         "_ZN12ZApplication16slotReturnToIdleEi"
 #define CONFIG_PATH         "/mmc/mmca1/libredkey.cfg"
-#define PHONE_PIDOF_COMMAND "busybox pidof -s /usr/SYSqtapp/phone/phone"
+#define PHONE_PIDOF_COMMAND "busybox pidof -s phone"
 #define LENGTH_PID_BUFFER   16
 #define TO_ERR(...)         fprintf(stderr, __VA_ARGS__)
 #define TO_DBG(...)         \
@@ -152,14 +153,14 @@ static unsigned long GetPhoneProcessPid(void) {
 	FILE *lCmdPipe = popen(PHONE_PIDOF_COMMAND, "r");
 	if (lCmdPipe) {
 		fgets(lPidBuffer, LENGTH_PID_BUFFER, lCmdPipe);
-		if (lPidBuffer[0] == '\0')
+		if (QString(lPidBuffer).stripWhiteSpace().isEmpty())
 			TO_ERR("libredkey.so: Error: PID of '%s' pipe command is wrong.\n", PHONE_PIDOF_COMMAND);
 		else
 			lResult = strtoul(lPidBuffer, NULL, 10);
 		pclose(lCmdPipe);
 	} else
 		TO_ERR("libredkey.so: Error: Cannot execute '%s' pipe command.\n", PHONE_PIDOF_COMMAND);
-	TO_DBG("libredkey.so: Debug: PID of 'phone' process is '%ul'.\n", lResult);
+	TO_DBG("libredkey.so: Debug: PID of 'phone' process is '%lu'.\n", lResult);
 	return lResult;
 }
 

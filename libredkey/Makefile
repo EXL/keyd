@@ -26,8 +26,8 @@ LDLAGS       = -shared -Wl,-soname,$(TARGET) -Wl,-rpath-link,$(EZXDIR)/lib
 LIBS         = -L$(EZXDIR)/lib -L$(ARMLIB) -L$(QTDIR)/lib $(LINKLIB)
 
 ####### Files
-SOURCES      = RedKey.cpp
-OBJECTS      = RedKey.o
+SOURCES      = libredkey.cpp
+OBJECTS      = libredkey.o
 
 all: $(TARGET)
 

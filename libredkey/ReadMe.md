@@ -1,5 +1,5 @@
-libredkey.so
-============
+libredkey
+=========
 
 A special library for hacking red key button behavior on MotoMAGX platform.
 

@@ -1,6 +1,6 @@
 /*
  * About:
- *   RedKey is a special library for hacking red key button on MotoMAGX platform.
+ *   libredkey is a special library for hacking behavior of red key button on MotoMAGX platform.
  *
  * Author:
  *   EXL

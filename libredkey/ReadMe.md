@@ -8,21 +8,29 @@ A special library for hacking red key button behavior on MotoMAGX platform.
 ```bash
 make clean
 make
-make tar # or
+make tar
 make zip
 ```
 
 ## Use
 
+Put `libredkey.cfg` to the `/ezxlocal/download/appwrite/setup/` directory.
+
 ```bash
-LD_PRELOAD=libredkey.so <some app> # or
+LD_PRELOAD=libredkey.so ./<some application>
+
 export LD_PRELOAD=libredkey.so
-./<some app>
-```
+./<some application>
 
-## Additional
+LD_PRELOAD=libredkey.so LIBREDKEY_CONFIG_PATH=/mmc/mmca1/libredkey.cfg ./<some application>
 
-```bash
-LD_PRELOAD=libredkey.so LIBREDKEY_CONFIG_PATH=/mmc/mmca1/libredkey.cfg ./<some app>
-LD_PRELOAD=libredkey_no_config.so LIBREDKEY_ON=1 ./<some app>
+export LD_PRELOAD=libredkey.so
+export LIBREDKEY_CONFIG_PATH=/mmc/mmca1/libredkey.cfg
+./<some application>
+
+LIBREDKEY_ON=1 LD_PRELOAD=libredkey_no_config.so ./<some application>
+
+export LD_PRELOAD=libredkey_no_config.so
+export LIBREDKEY_ON=1
+./<some application>
 ```

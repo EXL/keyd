@@ -9,6 +9,7 @@
  *   Public Domain
  *
  * History:
+ *   11-Oct-2021: Fixed ignoring slide/timeout/flip reasons.
  *   10-Oct-2021: Added custom config path through environment variables, added version without config.
  *   09-Oct-2021: Fixed wrong determinig of "phone" process PID.
  *   04-Oct-2021: Implemented "hide" and "desktop" commands.
@@ -212,8 +213,10 @@ static void ProcessCustomRedKeyCommand(ZApplication *aZApp, int aReason) {
 			TO_DBG("libredkey.so: Debug: Widget footprint is: '%s'\n", lWidgetFootPrint.data());
 			ExecCommand(aZApp, aReason, G_APP_MAP[lWidgetFootPrint], lWidgetFootPrint);
 		}
-	} else
+	} else {
 		TO_DBG("libredkey.so: Debug: Reason '%d' is not implemented now.\n", aReason);
+		CallOriginalSlotReturnToIdle(aZApp, aReason);
+	}
 }
 
 void ZApplication::slotReturnToIdle(int aReason) {

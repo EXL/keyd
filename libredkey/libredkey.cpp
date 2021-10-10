@@ -233,6 +233,7 @@ void ZApplication::slotReturnToIdle(int aReason) {
 	if (getenv("LIBREDKEY_ON") && aReason == IDLE_REASON_RED_KEY) {
 		G_DEBUG_OUTPUT = false;
 		ShowDesktopMainScreen(this);
-	}
+	} else
+		CallOriginalSlotReturnToIdle(this, aReason);
 #endif
 }

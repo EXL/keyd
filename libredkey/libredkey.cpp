@@ -9,6 +9,7 @@
  *   Public Domain
  *
  * History:
+ *   10-Oct-2021: Added custom config path through environment variables, added version without config.
  *   09-Oct-2021: Fixed wrong determinig of "phone" process PID.
  *   04-Oct-2021: Implemented "hide" and "desktop" commands.
  *   02-Oct-2021: Added reading configuration file.
@@ -49,7 +50,6 @@
 #define IDLE_REASON_SLIDER  -5003
 #define HACK_LIBRARY        "libezxappbase.so.1"
 #define HACK_METHOD         "_ZN12ZApplication16slotReturnToIdleEi"
-#define CONFIG_PATH         "/mmc/mmca1/libredkey.cfg"
 #define PHONE_PIDOF_COMMAND "busybox pidof -s phone"
 #define LENGTH_PID_BUFFER   16
 #define TO_ERR(...)         fprintf(stderr, __VA_ARGS__)
@@ -65,6 +65,7 @@ typedef void (ZApplication::*qt_slot_method_t)(int aReason);
 static bool G_CONFIG_PARSED = false;
 static bool G_DEBUG_OUTPUT = true;
 static QString G_GLOBAL_COMMAND = "original";
+static QString G_CONFIG_PATH = "/ezxlocal/download/appwrite/setup/libredkey.cfg";
 static QMap<QString, QString> G_APP_MAP;
 
 static qt_slot_method_t GetOriginalSlotReturnToIdleDlSym(void) {
@@ -109,9 +110,12 @@ static void ParseConfigLine(const QString &aLine) {
 
 static bool ReadConfigurationFile(void) {
 	if (!G_CONFIG_PARSED) {
-		if (!QFileInfo(CONFIG_PATH).isReadable())
+		char *lConfigPath = getenv("LIBREDKEY_CONFIG_PATH");
+		if (lConfigPath)
+			G_CONFIG_PATH = lConfigPath;
+		if (!QFileInfo(G_CONFIG_PATH).isReadable())
 			return false;
-		QFile lConfigFile(CONFIG_PATH);
+		QFile lConfigFile(G_CONFIG_PATH);
 		if (lConfigFile.open(IO_ReadOnly)) {
 			QTextStream lTextStream(&lConfigFile);
 			while (!lTextStream.eof())
@@ -213,11 +217,19 @@ static void ProcessCustomRedKeyCommand(ZApplication *aZApp, int aReason) {
 }
 
 void ZApplication::slotReturnToIdle(int aReason) {
+#ifndef NO_CONFIG
 	if (ReadConfigurationFile()) {
 		TO_DBG("libredkey.so: Debug: Calling slotReturnToIdleFrom() method, parameter '%d'.\n", aReason);
 		ProcessCustomRedKeyCommand(this, aReason);
 	} else {
-		TO_ERR("libredkey.so: Error: Cannot read '%s' config file, will call original slot method.\n", CONFIG_PATH);
+		TO_ERR("libredkey.so: Error: Cannot read '%s' config file, will call original slot method.\n",
+			G_CONFIG_PATH.data());
 		CallOriginalSlotReturnToIdle(this, aReason);
 	}
+#else
+	if (getenv("LIBREDKEY_ON") && aReason == IDLE_REASON_RED_KEY) {
+		G_DEBUG_OUTPUT = false;
+		ShowDesktopMainScreen(this);
+	}
+#endif
 }

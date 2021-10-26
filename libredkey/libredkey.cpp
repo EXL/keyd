@@ -9,6 +9,7 @@
  *   Public Domain
  *
  * History:
+ *   12-Oct-2021: Fixed bug with flip event on phone without flip (Motorola ZN5).
  *   11-Oct-2021: Fixed ignoring slide/timeout/flip reasons.
  *   10-Oct-2021: Added custom config path through environment variables, added version without config.
  *   09-Oct-2021: Fixed wrong determinig of "phone" process PID.
@@ -206,7 +207,7 @@ static void ExecCommand(ZApplication *aZApp, int aReason, const QString &aComman
 }
 
 static void ProcessCustomRedKeyCommand(ZApplication *aZApp, int aReason) {
-	if (aReason == IDLE_REASON_RED_KEY) { // Only for Red Key reason now.
+	if (aReason == IDLE_REASON_RED_KEY || aReason == IDLE_REASON_FLIP) { // Only for Red Key reason now, also hack flip bug on ZN5.
 		const QWidget *lActiveWidget = aZApp->activeWindow();
 		if (lActiveWidget) {
 			const QString lWidgetFootPrint = QFileInfo(aZApp->argv()[0]).fileName() + ":" + lActiveWidget->className();
@@ -230,7 +231,7 @@ void ZApplication::slotReturnToIdle(int aReason) {
 		CallOriginalSlotReturnToIdle(this, aReason);
 	}
 #else
-	if (getenv("LIBREDKEY_ON") && aReason == IDLE_REASON_RED_KEY) {
+	if (getenv("LIBREDKEY_ON") && (aReason == IDLE_REASON_RED_KEY || aReason == IDLE_REASON_FLIP)) {
 		G_DEBUG_OUTPUT = false;
 		ShowDesktopMainScreen(this);
 	} else

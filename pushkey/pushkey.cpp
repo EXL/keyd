@@ -24,9 +24,11 @@
 #include <unistd.h>
 
 // C
+#include <errno.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define KEY_SERVER_PIPE "/tmp/ui-framework-keytest-fifo"
 
@@ -50,7 +52,7 @@ static int print_usage(void) {
 	return 1;
 }
 
-static int send_event_to_server(const MOTO_INPUT_EVENT_T &a_event) {
+static int send_event_to_server(const MOTO_INPUT_EVENT_T a_event) {
 	static int l_server_fd = -1;
 	if (l_server_fd == -1) {
 		l_server_fd = open(KEY_SERVER_PIPE, O_WRONLY);
@@ -60,12 +62,14 @@ static int send_event_to_server(const MOTO_INPUT_EVENT_T &a_event) {
 	}
 }
 
-static int send_event_to_driver(const MOTO_INPUT_EVENT_T &a_event) {
+static int send_event_to_driver(const MOTO_INPUT_EVENT_T a_event) {
 	const int l_keypad_dev = open(KEYPADI_DEVICENAME, O_RDWR);
 	if (l_keypad_dev < 0)
 		return print_error("pushkey: Error: Cannot open keypad \""KEYPADI_DEVICENAME"\" device!\n");
-	if (ioctl(l_keypad_dev, KEYPAD_IOC_INSERT_EVENT, &a_event) < 0)
+	if (ioctl(l_keypad_dev, KEYPAD_IOC_INSERT_EVENT, a_event) < 0) {
+		fprintf(stderr, "pushkey: Error: ioctl: %s\n", strerror(errno));
 		return print_error("pushkey: Error: Cannot insert event to the \""KEYPADI_DEVICENAME"\" device!\n");
+	}
 	close(l_keypad_dev);
 	return 0;
 }

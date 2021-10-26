@@ -24,7 +24,7 @@ CXX                = $(TOOLPREFIX)/bin/arm-linux-gnueabi-g++
 STRIP              = $(TOOLPREFIX)/bin/arm-linux-gnueabi-strip
 INCPATH            = -I. -I$(QTDIR)/include -I$(EZXDIR)/include -I$(TOOLPREFIX)/arm-linux-gnueabi/include
 CXXFLAGS           = -pipe -fPIC -fno-exceptions -fno-rtti -Wall -W -O2 -DQWS -DNO_DEBUG $(INCPATH)
-CXXFLAGS_NO_CONFIG = -Wno-unused-function -DNO_CONFIG 
+CXXFLAGS_NO_CONFIG = -Wno-unused-function -DNO_CONFIG
 LDLAGS             = -shared -Wl,-soname,$(TARGET) -Wl,-rpath-link,$(EZXDIR)/lib
 LIBS               = -L$(EZXDIR)/lib -L$(ARMLIB) -L$(QTDIR)/lib $(LINKLIB)
 

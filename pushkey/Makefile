@@ -11,7 +11,7 @@ ARMLIB            := $(TOOLPREFIX)/arm-linux-gnueabi/lib
 ####### Default Platform
 QTDIR             := $(TOOLPREFIX)/lib/qt-zn5
 EZXDIR            := $(TOOLPREFIX)/lib/ezx-zn5
-LINKLIB           := -lqte-mt
+LINKLIB           := # -lqte-mt
 TARGET             = $(NAME)
 
 ####### Build Tools and Options

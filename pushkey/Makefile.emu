@@ -1,19 +1,19 @@
 # This Makefile was created and edited by EXL, 10-Nov-2021
-# Default MotoMAGX platform is Motorola ZINE ZN5
+# Default MotoMAGX platform is Motorola MotoMAGX Emulator
 
 ####### Config
-NAME              := pushkey
+NAME              := pushkey_EMU
 
 ####### SDK and Toolchains
-TOOLPREFIX        := /arm-eabi
+TOOLPREFIX        := /opt/toolchains/motomagx/emulator
 
 ####### Default Platform
 TARGET             = $(NAME)
 
 ####### Build Tools and Options
-CC                 = $(TOOLPREFIX)/bin/arm-linux-gnueabi-gcc
-STRIP              = $(TOOLPREFIX)/bin/arm-linux-gnueabi-strip
-INCPATH            = -I$(TOOLPREFIX)/arm-linux-gnueabi/include -I$(TOOLPREFIX)/lib/ezx-zn5/include
+CC                 = $(TOOLPREFIX)/bin/i686-mot-linux-gnu-gcc
+STRIP              = $(TOOLPREFIX)/bin/i686-mot-linux-gnu-strip
+INCPATH            = -I$(TOOLPREFIX)/include
 CFLAGS             = -Wall -Wextra -W -O2 -DNO_DEBUG $(INCPATH)
 
 ####### Files

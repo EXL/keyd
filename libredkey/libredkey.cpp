@@ -9,6 +9,7 @@
  *   Public Domain
  *
  * History:
+ *   13-Nov-2021: Implemented native C++/Qt API function for determining phone PID instead of using "pidof" utility.
  *   11-Oct-2021: Fixed ignoring slide/timeout/flip reasons.
  *   10-Oct-2021: Added custom config path through environment variables, added version without config.
  *   09-Oct-2021: Fixed wrong determinig of "phone" process PID.
@@ -25,9 +26,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Linux
+#include <linux/limits.h>
+
 // Qt
 #include <qarray.h>
 #include <qcopchannel_qws.h>
+#include <qdir.h>
 #include <qfile.h>
 #include <qfileinfo.h>
 #include <qmap.h>
@@ -51,8 +56,7 @@
 #define IDLE_REASON_SLIDER  -5003
 #define HACK_LIBRARY        "libezxappbase.so.1"
 #define HACK_METHOD         "_ZN12ZApplication16slotReturnToIdleEi"
-#define PHONE_PIDOF_COMMAND "busybox pidof -s phone"
-#define LENGTH_PID_BUFFER   16
+#define PHONE_PROCESS_NAME  "phone"
 #define TO_ERR(...)         fprintf(stderr, __VA_ARGS__)
 #define TO_DBG(...)         \
 	do { \
@@ -152,26 +156,30 @@ static void HideAllApplicationWidgets(void) {
 	delete lWidgetList;
 }
 
-static unsigned long GetPhoneProcessPid(void) {
-	unsigned long lResult = 0;
-	char lPidBuffer[LENGTH_PID_BUFFER] = { '\0' };
-	FILE *lCmdPipe = popen(PHONE_PIDOF_COMMAND, "r");
-	if (lCmdPipe) {
-		fgets(lPidBuffer, LENGTH_PID_BUFFER, lCmdPipe);
-		if (QString(lPidBuffer).stripWhiteSpace().isEmpty())
-			TO_ERR("libredkey.so: Error: PID of '%s' pipe command is wrong.\n", PHONE_PIDOF_COMMAND);
-		else
-			lResult = strtoul(lPidBuffer, NULL, 10);
-		pclose(lCmdPipe);
-	} else
-		TO_ERR("libredkey.so: Error: Cannot execute '%s' pipe command.\n", PHONE_PIDOF_COMMAND);
-	TO_DBG("libredkey.so: Debug: PID of 'phone' process is '%lu'.\n", lResult);
-	return lResult;
+static pid_t getFirstPidOfProcess(const QString &aProcessName) {
+	const QDir lProcDir("/proc");
+	if (lProcDir.isReadable()) {
+		QFileInfoListIterator lIt(*lProcDir.entryInfoList(QDir::Dirs | QDir::NoSymLinks));
+		for (bool lIsOk = false; const QFileInfo *lFi = lIt.current(); ++lIt) {
+			const QString lProcDirName = lFi->fileName();
+			const pid_t lPid = lProcDirName.toInt(&lIsOk);
+			if (lIsOk) {
+				QFile lCmdLineFile("/proc/" + lProcDirName + "/cmdline");
+				if (lCmdLineFile.open(IO_ReadOnly)) {
+					QString lCmdLine;
+					if ((lCmdLineFile.readLine(lCmdLine, PATH_MAX) != -1) && lCmdLine.contains(aProcessName))
+						return lPid;
+				}
+			}
+		}
+	}
+	return -1;
 }
 
 static void ShowDesktopMainScreen(ZApplication *aZApp) {
-	unsigned long lPidPhone = GetPhoneProcessPid();
-	if (lPidPhone) {
+	const pid_t lPidPhone = getFirstPidOfProcess(PHONE_PROCESS_NAME);
+	if (lPidPhone != -1) {
+		TO_DBG("libredkey.so: Debug: PID of 'phone' process is '%d'.\n", lPidPhone);
 		QCString lBroadCastChannel = QCString("EZX/Application/" + QString::number(lPidPhone));
 		QCString lBroadCastMessage = QCString("raise()");
 		TO_DBG("libredkey.so: Debug: Will send message '%s' to the '%s' channel.\n",
@@ -182,7 +190,8 @@ static void ShowDesktopMainScreen(ZApplication *aZApp) {
 		QCopChannel::send(lBroadCastChannel, lBroadCastMessage, QByteArray());
 #endif
 		aZApp->processEvents();
-	}
+	} else
+		TO_ERR("libredkey.so: Error: Cannot determine PID of '%s' process name.\n", PHONE_PROCESS_NAME);
 }
 
 static void ExecCommand(ZApplication *aZApp, int aReason, const QString &aCommand, const QString &aWidgetName) {

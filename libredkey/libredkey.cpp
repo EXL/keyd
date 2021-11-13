@@ -26,6 +26,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// POSIX
+#include <sys/types.h>
+
 // Linux
 #include <linux/limits.h>
 

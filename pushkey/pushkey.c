@@ -116,7 +116,7 @@ static int send_event_to_keypad_driver(const int device_fd, const char *key, con
 	else if (mode == KEYMODE_ASCII)
 		result = ioctl(device_fd, KEYPAD_IOC_INSERT_ASCII_EVENT, keycode);
 	else if (mode == KEYMODE_SINGLE) {
-		result = ioctl(device_fd, KEYPAD_IOC_INSERT_EVENT, (keycode | 0x8000));
+		result = ioctl(device_fd, KEYPAD_IOC_INSERT_EVENT, (keycode | KEYDOWN));
 		result = ioctl(device_fd, KEYPAD_IOC_INSERT_EVENT, keycode);
 	}
 	return result;

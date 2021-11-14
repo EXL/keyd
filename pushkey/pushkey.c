@@ -9,9 +9,10 @@
  *   Public Domain
  *
  * History:
+ *   14-Nov-2021: First public release, fix help, typos, and bump version date.
  *   10-Nov-2021: Add "/dev/vkm" driver which is used on MotoMAGX emulator and probably modern MotoMAGX phones.
- *   28-Oct-2021: Sending key events to "/dev/keypadX" driver works, move to C language.
- *   27-Oct-2021: Trying to send uint16_t, drop key server pipe.
+ *   28-Oct-2021: Move to the C language since sending key events to "/dev/keypadX" drivers now works.
+ *   27-Oct-2021: Drop keys server pipe and trying to send uint16_t keycode.
  *   26-Oct-2021: First draft POC prototype version.
  */
 
@@ -60,23 +61,23 @@ static int ioctl_error(const char *argument) {
 static int print_usage(void) {
 	fprintf(
 		stderr,
-		"|pushkey| by EXL, v1.0, 28-Oct-2021\n\n"
+		"|pushkey| by EXL, v1.0, 14-Nov-2021\n\n"
 		"Usage:\n"
 		"\tpushkey <keycode> <device> <mode>\n\n"
 		"Examples:\n"
-		"\tpushkey 0x8001 # push \"1\" button on keypadI, default mode\n"
-		"\tpushkey 0x0001 # release \"1\" button on keypadI, default mode\n\n"
-		"\tpushkey 0x8001 i # push \"1\" button on keypadI, default mode\n"
-		"\tpushkey 0x0001 i # release \"1\" button on keypadI, default mode\n\n"
-		"\tpushkey 0x8001 b # push \"1\" button on keypadB, default mode\n"
-		"\tpushkey 0x0001 b # release \"1\" button on keypadB, default mode\n\n"
-		"\tpushkey 0x31 i a # push \"1\" button on keypadI, ascii mode\n"
-		"\tpushkey 0x31 b a # push \"1\" button on keypadB, ascii mode\n\n"
-		"\tpushkey 0x0001 i s # push \"1\" button on keypadI, single mode\n"
-		"\tpushkey 0x0001 b s # push \"1\" button on keypadB, single mode\n\n"
-		"\tpushkey 0x80000004 v # push \"4\" button on vkm, default mode\n"
-		"\tpushkey 0x00000004 v # release \"4\" button on vkm, default mode\n\n"
-		"\tpushkey 0x00000004 v s # push \"4\" button on vkm, single mode\n"
+		"\tpushkey 0x8001         # push \"1\" button on \"/dev/keypadI\", default mode\n"
+		"\tpushkey 0x0001         # release \"1\" button on \"/dev/keypadI\", default mode\n\n"
+		"\tpushkey 0x8001 i       # push \"1\" button on \"/dev/keypadI\", default mode\n"
+		"\tpushkey 0x0001 i       # release \"1\" button on \"/dev/keypadI\", default mode\n\n"
+		"\tpushkey 0x8001 b       # push \"1\" button on \"/dev/keypadB\", default mode\n"
+		"\tpushkey 0x0001 b       # release \"1\" button on \"/dev/keypadB\", default mode\n\n"
+		"\tpushkey 0x31 i a       # push \"1\" button on \"/dev/keypadI\", ASCII mode\n"
+		"\tpushkey 0x31 b a       # push \"1\" button on \"/dev/keypadB\", ASCII mode\n\n"
+		"\tpushkey 0x0001 i s     # push \"1\" button on \"/dev/keypadI\", single mode\n"
+		"\tpushkey 0x0001 b s     # push \"1\" button on \"/dev/keypadB\", single mode\n\n"
+		"\tpushkey 0x80000004 v   # push \"4\" button on \"/dev/vkm\", default mode\n"
+		"\tpushkey 0x00000004 v   # release \"4\" button on \"/dev/vkm\", default mode\n\n"
+		"\tpushkey 0x00000004 v s # push \"4\" button on \"/dev/vkm\", single mode\n"
 	);
 	return 1;
 }

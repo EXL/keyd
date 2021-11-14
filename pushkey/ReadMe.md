@@ -46,3 +46,7 @@ pushkey 0x00000004 v   # release "4" button on vkm, default mode
 
 pushkey 0x00000004 v s # push "4" button on vkm, single mode
 ```
+
+## Additional Information
+
+See ["Эмуляция нажатия клавиш на Motorola ZN5"](https://forum.motofan.ru/index.php?s=&showtopic=163337&view=findpost&p=1794896) post (in Russian) on the [MotoFan.Ru](https://forum.motofan.ru) forum.

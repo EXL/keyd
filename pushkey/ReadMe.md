@@ -1,7 +1,7 @@
 pushkey
 =======
 
-A special utility for emulating pressing keypad buttons on Motorola MotoMAGX platform.
+A special utility for emulating pressing keypad buttons on Motorola MotoMAGX and MotoEZX platforms.
 
 ## Build for MotoMAGX device
 

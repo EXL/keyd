@@ -1,0 +1,41 @@
+# This Makefile was created and edited by EXL, 27-Nov-2021
+# Default EZX platform is Motorola E680 (R51)
+
+####### Config
+NAME              := pushkey_e680
+
+####### SDK and Toolchains
+TOOLPREFIX        := /opt/toolchains/motoe680
+
+####### Default Platform
+TARGET             = $(NAME)
+
+####### Build Tools and Options
+CC                 = $(TOOLPREFIX)/bin/arm-linux-gcc
+STRIP              = $(TOOLPREFIX)/bin/arm-linux-strip
+INCPATH            = -I$(TOOLPREFIX)/include
+CFLAGS             = -Wall -W -O2 -DNO_DEBUG -DEZX_E680 $(INCPATH)
+
+####### Files
+SOURCES            = pushkey_ezx.c
+OBJECTS            = pushkey_ezx.o
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CC) -o $(TARGET) $(OBJECTS)
+	$(STRIP) -s $(TARGET)
+
+tar: $(TARGET)
+	-tar -cvf $(NAME).tar $(TARGET)
+
+zip: $(TARGET)
+	-zip -r -9 $(NAME).zip $(TARGET)
+
+rmobj:
+	-rm -f $(OBJECTS)
+	-rm -f *~ core
+	$(RM) *.o
+
+clean: rmobj
+	$(RM) $(TARGET) *.tar *.zip

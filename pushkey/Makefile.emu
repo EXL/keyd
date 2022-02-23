@@ -5,7 +5,7 @@
 NAME              := pushkey_EMU
 
 ####### SDK and Toolchains
-TOOLPREFIX        := /opt/toolchains/motomagx/emulator
+TOOLPREFIX        := /opt/toolchains/motoemu
 
 ####### Default Platform
 TARGET             = $(NAME)

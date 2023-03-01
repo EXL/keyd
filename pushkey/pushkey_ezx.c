@@ -27,8 +27,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KEYPADI_DEVICENAME "/dev/keypad1"
-#define KEYPADB_DEVICENAME "/dev/keypad2"
+#if defined(EZX_E680)
+	#define KEYPADI_DEVICENAME "/dev/keypad1"
+	#define KEYPADB_DEVICENAME "/dev/keypad2"
+#elif defined(EZX_E398_JUIX_P2)
+	#define KEYPADI_DEVICENAME "/dev/keypadI"
+	#define KEYPADB_DEVICENAME "/dev/keypadB"
+#else
+	#define KEYPADI_DEVICENAME "/dev/keypadI"
+	#define KEYPADB_DEVICENAME "/dev/keypadB"
+#endif
 
 typedef uint16_t key_code_short_t;
 typedef uint32_t key_code_long_t;
